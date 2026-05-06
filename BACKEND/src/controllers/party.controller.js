@@ -53,7 +53,6 @@ const getParties = async (req, res) => {
       search,
     });
 
-  
     res.json(parties);
   } catch (error) {
     res.status(500).json({ message: "Cloud sync error in registry" });

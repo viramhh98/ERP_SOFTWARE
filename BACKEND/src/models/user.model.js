@@ -41,8 +41,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      // REMOVED: required: true
-      // Passwords are no longer strictly required because Google users won't have one.
     },
     googleId: {
       type: String,

@@ -188,7 +188,7 @@ const SalesHistory = () => {
                    </table>
                 </div>
                 
-                <div className="flex justify-between items-center bg-slate-900 text-white p-8 rounded-[2rem]">
+                <div className="flex justify-between items-center bg-slate-900 text-white p-8 rounded-4xl">
                     <div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Bill Value</p>
                       <h2 className="text-4xl font-black tracking-tighter">₹{selectedSale.totalAmount.toLocaleString()}</h2>

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-
 const Sale = require("../models/sale.model");
+const Party = require("../models/party.model"); // 1️⃣ Import Party model
 const stockService = require("./stock.service");
 const stockTransactionService = require("./stockTransaction.service");
 const ledgerService = require("./ledger.service");
@@ -34,8 +34,6 @@ const createSale = async (data) => {
     if (paidAmount >= totalAmount) status = "PAID";
     else if (paidAmount > 0) status = "PARTIAL";
 
-  
-
     // 4. Create Sale
     const sale = await Sale.create([{
       ...data,
@@ -68,7 +66,7 @@ const createSale = async (data) => {
       }, session);
     }
 
-    // 6. LEDGER: DEBIT (Full bill)
+    // 6. LEDGER: DEBIT (Full bill - increases customer due)
     await ledgerService.createLedger({
       partyId: data.partyId,
       companyId: data.companyId,
@@ -80,7 +78,7 @@ const createSale = async (data) => {
       description: `Sales Bill: #${saleDoc._id.toString().slice(-6)}`
     }, session);
 
-    // 7. LEDGER: CREDIT (Only what customer paid)
+    // 7. LEDGER: CREDIT (Only what customer paid - decreases customer due)
     if (paidAmount > 0) {
       await ledgerService.createLedger({
         partyId: data.partyId,
@@ -94,7 +92,19 @@ const createSale = async (data) => {
       }, session);
     }
 
-    // 8. Commit
+    // 8. 🚀 Update Party Balance in the SAME Transaction
+    // Balance Impact: Bill amount increases what they owe (+), Payment reduces it (-)
+    const netBalanceImpact = totalAmount - paidAmount;
+    
+    if (netBalanceImpact !== 0) {
+      await Party.findByIdAndUpdate(
+        data.partyId,
+        { $inc: { balance: netBalanceImpact } },
+        { session } // Transaction lock
+      );
+    }
+
+    // 9. Commit
     await session.commitTransaction();
     session.endSession();
 

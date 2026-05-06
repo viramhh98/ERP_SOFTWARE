@@ -7,7 +7,8 @@ const activeCompanyMiddleware = require("../middleware/activeCompany.middleware"
 // 1. View Ledger
 router.get("/:partyId", authMiddleware, activeCompanyMiddleware, ledgerController.getPartyLedger);
 
-// 2. Post New Payment (DEBIT Entry)
+
+// 3. Post New Payment (DEBIT Entry)
 router.post("/payment", authMiddleware, activeCompanyMiddleware, ledgerController.postPayment);
 
 module.exports = router;

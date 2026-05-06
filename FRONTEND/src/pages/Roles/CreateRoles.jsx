@@ -120,7 +120,7 @@ const CreateRole = () => {
 
   return (
     <MainLayout title="Access Control">
-      <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-6 h-[calc(100vh-140px)] items-stretch">
+      <div className="max-w-400 mx-auto grid grid-cols-12 gap-6 h-[calc(100vh-140px)] items-stretch">
         
         {/* LEFT PANEL */}
         <div className="col-span-12 lg:col-span-8 flex flex-col space-y-6 overflow-hidden">
@@ -169,7 +169,7 @@ const CreateRole = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-7 space-y-5 custom-scrollbar bg-slate-50/50">
               {loading ? <p className="text-center animate-pulse text-xs font-bold text-slate-400">Syncing...</p> : rolesList.map((role) => (
-                <div key={role._id} className="group p-6 rounded-[1.5rem] bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all duration-300">
+                <div key={role._id} className="group p-6 rounded-3xl bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all duration-300">
                   <div className="flex justify-between items-center mb-5">
                     <span className="text-sm font-black text-slate-800 uppercase">{role.name}</span>
                     {role.name !== 'OWNER' && (
