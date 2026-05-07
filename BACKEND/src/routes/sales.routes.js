@@ -18,5 +18,6 @@ router.post(
 );
 
 router.get("/", authMiddleware, activeCompanyMiddleware, activeBranchMiddleware, saleController.getSalesHistory);
+router.get("/:id", authMiddleware, activeCompanyMiddleware, activeBranchMiddleware, saleController.getSaleById);
 
 module.exports = router;

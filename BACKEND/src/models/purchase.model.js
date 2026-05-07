@@ -1,50 +1,199 @@
+// const mongoose = require("mongoose");
+// const purchaseSchema = new mongoose.Schema({
+//   companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+
+//   branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+
+//   partyId: { type: mongoose.Schema.Types.ObjectId, ref: "Party", required: true },
+
+//   purchaseNumber: {
+//     type: String,
+//     required: true
+//   },
+
+//   purchaseDate: {
+//     type: Date,
+//     default: Date.now
+//   },
+
+//   items: [
+//     {
+//       itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", required: true },
+
+//       quantity: { type: Number, required: true, min: 1 },
+
+//       price: { type: Number, required: true, min: 0 },
+
+//       total: { type: Number, required: true, min: 0 }
+//     }
+//   ],
+
+//   totalAmount: { type: Number, required: true, min: 0 },
+
+//   paymentMode: {
+//     type: String,
+//     enum: ["cash", "credit"],
+//     default: "credit"
+//   },
+
+//   status: {
+//     type: String,
+//     enum: ["PENDING", "PAID", "PARTIAL"],
+//     default: "PENDING"
+//   }
+
+// }, { timestamps: true });
+
+// purchaseSchema.index({ companyId: 1, branchId: 1 });
+
+// module.exports = mongoose.model("Purchase", purchaseSchema);
+
+// models/purchase.model.js
+
 const mongoose = require("mongoose");
-const purchaseSchema = new mongoose.Schema({
-  companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
 
-  branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+const purchaseSchema = new mongoose.Schema(
+  {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
 
-  partyId: { type: mongoose.Schema.Types.ObjectId, ref: "Party", required: true },
+      ref: "Company",
 
-  purchaseNumber: {
-    type: String,
-    required: true
+      required: true,
+    },
+
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+
+      ref: "Branch",
+
+      required: true,
+    },
+
+    partyId: {
+      type: mongoose.Schema.Types.ObjectId,
+
+      ref: "Party",
+
+      required: true,
+    },
+
+    /* -------------------------------------------- */
+    /* ERP PURCHASE NUMBER */
+    /* -------------------------------------------- */
+
+    purchaseNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    /* -------------------------------------------- */
+    /* SUPPLIER BILL NUMBER */
+    /* -------------------------------------------- */
+
+    supplierBillNo: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    supplierBillDate: {
+      type: Date,
+      default: Date.now,
+    },
+
+    purchaseDate: {
+      type: Date,
+      default: Date.now,
+    },
+
+    items: [
+      {
+        itemId: {
+          type: mongoose.Schema.Types.ObjectId,
+
+          ref: "Item",
+
+          required: true,
+        },
+
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+
+        total: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+      },
+    ],
+
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    paidAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    paymentMode: {
+      type: String,
+
+      enum: ["cash", "credit"],
+
+      default: "credit",
+    },
+
+    status: {
+      type: String,
+
+      enum: ["PENDING", "PAID", "PARTIAL"],
+
+      default: "PENDING",
+    },
   },
-
-  purchaseDate: {
-    type: Date,
-    default: Date.now
-  },
-
-  items: [
-    {
-      itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", required: true },
-
-      quantity: { type: Number, required: true, min: 1 },
-
-      price: { type: Number, required: true, min: 0 },
-
-      total: { type: Number, required: true, min: 0 }
-    }
-  ],
-
-  totalAmount: { type: Number, required: true, min: 0 },
-
-  
-  paymentMode: {
-    type: String,
-    enum: ["cash", "credit"],
-    default: "credit"
-  },
-
-  status: {
-    type: String,
-    enum: ["PENDING", "PAID", "PARTIAL"],
-    default: "PENDING"
+  {
+    timestamps: true,
   }
+);
 
-}, { timestamps: true });
+/* -------------------------------------------- */
+/* INDEXES */
+/* -------------------------------------------- */
 
-purchaseSchema.index({ companyId: 1, branchId: 1 });
+purchaseSchema.index({
+  companyId: 1,
+
+  branchId: 1,
+});
+
+/* -------------------------------------------- */
+/* PREVENT DUPLICATE SUPPLIER BILL */
+/* -------------------------------------------- */
+
+purchaseSchema.index(
+  {
+    partyId: 1,
+
+    supplierBillNo: 1,
+  },
+  {
+    unique: true,
+  }
+);
 
 module.exports = mongoose.model("Purchase", purchaseSchema);

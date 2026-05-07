@@ -102,26 +102,55 @@ const PartyLedger = () => {
   // --- 5. VIEW DOCUMENT DETAILS (SALE/PURCHASE) ---
   const handleViewDoc = async (refId, refType) => {
     setModalLoading(true);
+
     setShowDocModal(true);
+
     try {
       const endpoint =
         refType === "PURCHASE" ? `/purchase/${refId}` : `/sales/${refId}`;
+
       const res = await api.get(endpoint);
+
       const data = res.data.data;
+
       setDocData(data);
 
-      const itemPromises = data.items.map((item) =>
-        api.get(`/item/${item.itemId}`)
-      );
-      const responses = await Promise.all(itemPromises);
-      setDocItems(
-        data.items.map((it, idx) => ({
-          ...it,
-          details: responses[idx].data.data,
-        }))
-      );
+      /* -------------------------------- */
+      /* HANDLE BOTH CASES */
+      /* -------------------------------- */
+
+      const formattedItems = data.items.map((item) => {
+        /* ITEM POPULATED */
+
+        if (typeof item.itemId === "object" && item.itemId !== null) {
+          return {
+            ...item,
+
+            details: item.itemId,
+          };
+        }
+
+        /* ITEM NOT POPULATED */
+
+        return {
+          ...item,
+
+          details: {
+            name: "Item Data Missing",
+
+            sku: item.itemId,
+          },
+        };
+      });
+
+      console.log("FORMATTED ITEMS:", formattedItems);
+
+      setDocItems(formattedItems);
     } catch (err) {
+      console.log("DOC ERROR:", err);
+
       toast.error("Document details missing");
+
       setShowDocModal(false);
     } finally {
       setModalLoading(false);

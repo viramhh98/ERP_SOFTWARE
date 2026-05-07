@@ -26,6 +26,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { name: 'Sales History', path: '/sales/history', icon: <ShoppingCart size={20} /> },
     { name: 'New Purchase', path: '/purchase/create', icon: <PlusCircle size={20} className="text-blue-400" /> },
     { name: 'Purchase History', path: '/purchase/history', icon: <ClipboardList size={20} /> },
+    { name: 'Billing', path: '/billing',icon: (<Wallet size={20} className="text-cyan-400"/>),},
     { name: 'Party Ledger', path: '/finance/ledger', icon: <BookOpen size={20} className="text-amber-400" /> },
     { name: 'Analytics', path: '/analytics', icon: <BarChart3 size={20} /> },
   ];

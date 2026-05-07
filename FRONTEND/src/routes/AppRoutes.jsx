@@ -14,6 +14,7 @@ import Inventory from '../pages/company/Inventory';
 import PartyLedger from '../pages/Finance/PartyLedger'; 
 import SalesHistory from '../pages/company/SalesHistory';
 import Analytics from '../pages/company/Analytics'; 
+import DynamicBillingHeader from '../pages/company/DynamicBillingHeader';
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('erp_token');
   if (!token) return <Navigate to="/" replace />;
@@ -37,6 +38,7 @@ const AppRoutes = () => {
       
       {/* 📦 Inventory Module */}
       <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+      <Route path="/billing" element={<ProtectedRoute><DynamicBillingHeader /></ProtectedRoute>} />
 
       {/* 🛒 Purchase Module */}
       <Route path="/purchase/create" element={<ProtectedRoute><CreatePurchase /></ProtectedRoute>} />

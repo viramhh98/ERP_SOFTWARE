@@ -46,7 +46,40 @@ const getSalesHistory = async (req, res) => {
 
 
 
+const getSaleById = async (req, res) => {
+  try {
+    const companyId = req.user.activeCompanyId;
+    const branchId = req.user.activeBranchId;
+    const saleId = req.params.id;
+
+    const sale = await saleService.getSaleById(saleId, companyId, branchId); 
+    
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        message: "Sale not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Sale details retrieved successfully",
+      data: sale
+    });
+  }
+    catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+      });
+    }
+};
+
+
+
+
+
 
 module.exports = {
-  createSale,getSalesHistory
-};
+  createSale,getSalesHistory, getSaleById
+};        

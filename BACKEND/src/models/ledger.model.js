@@ -1,38 +1,158 @@
+// const mongoose = require("mongoose");
+
+// const ledgerSchema = new mongoose.Schema({
+//   partyId: { type: mongoose.Schema.Types.ObjectId, ref: "Party", required: true },
+
+//   companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+
+//   branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+
+//   type: {
+//     type: String,
+//     enum: ["DEBIT", "CREDIT"],
+//     required: true
+//   },
+
+//   amount: { type: Number, required: true, min: 0 },
+
+//   referenceType: {
+//     type: String,
+//     enum: ["SALE", "PURCHASE", "PAYMENT", "RECEIPT"],
+//     required: true
+//   },
+
+//   referenceId: {
+//     type: mongoose.Schema.Types.ObjectId,
+//     required: true
+//   },
+
+//   description: String
+
+// }, { timestamps: true });
+
+// ledgerSchema.index({ partyId: 1, companyId: 1 });
+
+
+// module.exports = mongoose.model("Ledger", ledgerSchema);
+
+
+
+
 const mongoose = require("mongoose");
 
-const ledgerSchema = new mongoose.Schema({
-  partyId: { type: mongoose.Schema.Types.ObjectId, ref: "Party", required: true },
+const ledgerSchema =
+  new mongoose.Schema({
 
-  companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
+    partyId: {
+      type:
+        mongoose.Schema.Types.ObjectId,
 
-  branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+      ref: "Party",
 
-  type: {
-    type: String,
-    enum: ["DEBIT", "CREDIT"],
-    required: true
-  },
+      required: true,
+    },
 
-  amount: { type: Number, required: true, min: 0 },
+    companyId: {
+      type:
+        mongoose.Schema.Types.ObjectId,
 
-  referenceType: {
-    type: String,
-    enum: ["SALE", "PURCHASE", "PAYMENT", "RECEIPT"],
-    required: true
-  },
+      ref: "Company",
 
-  referenceId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
-  },
+      required: true,
+    },
 
-  description: String
+    branchId: {
+      type:
+        mongoose.Schema.Types.ObjectId,
 
-}, { timestamps: true });
+      ref: "Branch",
+    },
 
-ledgerSchema.index({ partyId: 1, companyId: 1 });
+    type: {
 
+      type: String,
 
-module.exports = mongoose.model("Ledger", ledgerSchema);
+      enum: [
+        "DEBIT",
+        "CREDIT",
+      ],
 
+      required: true,
+    },
 
+    amount: {
+
+      type: Number,
+
+      required: true,
+
+      min: 0,
+    },
+
+    /* -------------------------------------------- */
+    /* REFERENCE TYPE */
+    /* -------------------------------------------- */
+
+    referenceType: {
+
+      type: String,
+
+      enum: [
+
+        /* SALES */
+
+        "SALE",
+
+        "PAYMENT",
+
+        "RECEIPT",
+
+        /* PURCHASE */
+
+        "PURCHASE",
+
+        "PURCHASE_PAYMENT",
+
+        /* FUTURE SAFE */
+
+        "OPENING",
+
+        "EXPENSE",
+      ],
+
+      required: true,
+    },
+
+    referenceId: {
+
+      type:
+        mongoose.Schema.Types.ObjectId,
+
+      required: true,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+    },
+
+  }, {
+    timestamps: true,
+  });
+
+/* -------------------------------------------- */
+/* INDEXES */
+/* -------------------------------------------- */
+
+ledgerSchema.index({
+
+  partyId: 1,
+
+  companyId: 1,
+});
+
+module.exports =
+  mongoose.model(
+    "Ledger",
+    ledgerSchema
+  );

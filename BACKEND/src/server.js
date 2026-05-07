@@ -66,6 +66,8 @@ app.use('/api/sales',salesRoutes);
 const ledgerRoutes = require("./routes/ledger.routes");
 app.use("/api/ledger", ledgerRoutes);
 
+const billNumberRoutes = require("./routes/billNumber.routes");
+app.use("/api/billnumber", billNumberRoutes);
 
 app.listen(Port,()=>{
     console.log(`Server is running on port ${Port}`);
