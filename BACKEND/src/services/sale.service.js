@@ -1,304 +1,3 @@
-// // services/sale.service.js
-
-// const mongoose = require("mongoose");
-
-// const Sale = require("../models/sale.model");
-
-// const Party = require("../models/party.model");
-
-// const stockService = require("./stock.service");
-
-// const stockTransactionService = require("./stockTransaction.service");
-
-// const ledgerService = require("./ledger.service");
-
-// const { generateBillNumber } = require("./billNumber.service");
-
-// /* ------------------------------------------------ */
-// /* CREATE SALE */
-// /* ------------------------------------------------ */
-
-// const createSale = async (data) => {
-//   const session = await mongoose.startSession();
-
-//   session.startTransaction();
-
-//   try {
-//     /* -------------------------------------------- */
-//     /* GENERATE BILL NUMBER */
-//     /* -------------------------------------------- */
-
-//     const salesNumber = await generateBillNumber({
-//       activeCompanyId: data.companyId,
-
-//       activeBranchId: data.branchId,
-
-//       voucherType: "Sales Invoice",
-//     });
-
-//     /* -------------------------------------------- */
-//     /* NORMALIZE ITEMS */
-//     /* -------------------------------------------- */
-
-//     const items = data.items.map((item) => ({
-//       ...item,
-
-//       quantity: Number(item.quantity),
-
-//       price: Number(item.price),
-
-//       total: Number(item.quantity) * Number(item.price),
-//     }));
-
-//     /* -------------------------------------------- */
-//     /* TOTAL */
-//     /* -------------------------------------------- */
-
-//     const totalAmount = items.reduce((acc, item) => acc + item.total, 0);
-
-//     const paidAmount = Number(data.paidAmount || 0);
-
-//     /* -------------------------------------------- */
-//     /* VALIDATION */
-//     /* -------------------------------------------- */
-
-//     if (paidAmount > totalAmount) {
-//       throw new Error("Paid amount cannot exceed total amount");
-//     }
-
-//     /* -------------------------------------------- */
-//     /* STATUS */
-//     /* -------------------------------------------- */
-
-//     let status = "PENDING";
-
-//     if (paidAmount >= totalAmount) {
-//       status = "PAID";
-//     } else if (paidAmount > 0) {
-//       status = "PARTIAL";
-//     }
-
-//     /* -------------------------------------------- */
-//     /* CREATE SALE */
-//     /* -------------------------------------------- */
-
-//     const sale = await Sale.create(
-//       [
-//         {
-//           ...data,
-
-//           salesNumber,
-
-//           items,
-
-//           totalAmount,
-
-//           paidAmount,
-
-//           status,
-//         },
-//       ],
-//       { session }
-//     );
-
-//     const saleDoc = sale[0];
-
-//     /* -------------------------------------------- */
-//     /* STOCK OUT */
-//     /* -------------------------------------------- */
-
-//     for (const item of items) {
-//       await stockService.decreaseStock({
-//         itemId: item.itemId,
-
-//         companyId: data.companyId,
-
-//         branchId: data.branchId,
-
-//         quantity: item.quantity,
-
-//         session,
-//       });
-
-//       await stockTransactionService.createStockTransaction(
-//         {
-//           itemId: item.itemId,
-
-//           companyId: data.companyId,
-
-//           branchId: data.branchId,
-
-//           type: "OUT",
-
-//           quantity: item.quantity,
-
-//           referenceType: "SALE",
-
-//           referenceId: saleDoc._id,
-//         },
-
-//         session
-//       );
-//     }
-
-//     /* -------------------------------------------- */
-//     /* LEDGER DEBIT */
-//     /* -------------------------------------------- */
-
-//     await ledgerService.createLedger(
-//       {
-//         partyId: data.partyId,
-
-//         companyId: data.companyId,
-
-//         branchId: data.branchId,
-
-//         type: "DEBIT",
-
-//         amount: totalAmount,
-
-//         referenceType: "SALE",
-
-//         referenceId: saleDoc._id,
-
-//         description: `Invoice ${salesNumber} generated for customer sale`,
-//       },
-
-//       session
-//     );
-
-//     /* -------------------------------------------- */
-//     /* PAYMENT CREDIT */
-//     /* -------------------------------------------- */
-
-//     if (paidAmount > 0) {
-//       await ledgerService.createLedger(
-//         {
-//           partyId: data.partyId,
-
-//           companyId: data.companyId,
-
-//           branchId: data.branchId,
-
-//           type: "CREDIT",
-
-//           amount: paidAmount,
-
-//           referenceType: "PAYMENT",
-
-//           referenceId: saleDoc._id,
-
-//           description: `Payment received against Invoice ${salesNumber} via ${data.paymentMode?.toUpperCase()}`
-//         },
-
-//         session
-//       );
-//     }
-
-//     /* -------------------------------------------- */
-//     /* PARTY BALANCE */
-//     /* -------------------------------------------- */
-
-//     const netBalanceImpact = totalAmount - paidAmount;
-
-//     if (netBalanceImpact !== 0) {
-//       await Party.findByIdAndUpdate(
-//         data.partyId,
-
-//         {
-//           $inc: {
-//             balance: netBalanceImpact,
-//           },
-//         },
-
-//         { session }
-//       );
-//     }
-
-//     /* -------------------------------------------- */
-//     /* COMMIT */
-//     /* -------------------------------------------- */
-
-//     await session.commitTransaction();
-
-//     session.endSession();
-
-//     return saleDoc;
-//   } catch (error) {
-//     await session.abortTransaction();
-
-//     session.endSession();
-
-//     throw error;
-//   }
-// };
-
-// /* ------------------------------------------------ */
-// /* GET SALES */
-// /* ------------------------------------------------ */
-
-// const getAllSales = async (companyId, branchId) => {
-//   try {
-//     return await Sale.find({
-//       companyId,
-//       branchId,
-//     })
-
-//       .populate("partyId", "name phone")
-
-//       .populate("items.itemId", "name sku unit")
-
-//       .sort({
-//         createdAt: -1,
-//       });
-//   } catch (error) {
-//     throw new Error("Error fetching sales from database");
-//   }
-// };
-
-// module.exports = {
-//   createSale,
-//   getAllSales,
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// services/sale.service.js
-
 const mongoose = require("mongoose");
 
 const Sale = require("../models/sale.model");
@@ -309,203 +8,155 @@ const stockTransactionService = require("./stockTransaction.service");
 
 const ledgerService = require("./ledger.service");
 
-const {
-  generateBillNumber,
-} = require("./billNumber.service");
+const { generateBillNumber } = require("./billNumber.service");
 
 /* ------------------------------------------------ */
 /* CREATE SALE */
 /* ------------------------------------------------ */
 
-const createSale = async (
-  data
-) => {
-
-  const session =
-    await mongoose.startSession();
+const createSale = async (data) => {
+  const session = await mongoose.startSession();
 
   session.startTransaction();
 
   try {
-
     /* -------------------------------------------- */
     /* GENERATE BILL NUMBER */
     /* -------------------------------------------- */
 
-    const salesNumber =
-      await generateBillNumber({
+    const salesNumber = await generateBillNumber({
+      activeCompanyId: data.companyId,
 
-        activeCompanyId:
-          data.companyId,
+      activeBranchId: data.branchId,
 
-        activeBranchId:
-          data.branchId,
-
-        voucherType:
-          "Sales Invoice",
-      });
+      voucherType: "Sales Invoice",
+    });
 
     /* -------------------------------------------- */
-    /* NORMALIZE ITEMS */
+    /* NORMALIZE + GROUP ITEMS */
     /* -------------------------------------------- */
 
-    const items =
-      data.items.map(
-        (item) => ({
+    const groupedMap = new Map();
 
+    for (const item of data.items) {
+      const itemId = item.itemId.toString();
+
+      const quantity = Number(item.quantity);
+
+      const price = Number(item.price);
+
+      const total = quantity * price;
+
+      if (groupedMap.has(itemId)) {
+        const existing = groupedMap.get(itemId);
+
+        existing.quantity += quantity;
+
+        existing.total += total;
+      } else {
+        groupedMap.set(itemId, {
           ...item,
 
-          quantity:
-            Number(
-              item.quantity
-            ),
+          quantity,
 
-          price:
-            Number(
-              item.price
-            ),
+          price,
 
-          total:
-            Number(
-              item.quantity
-            ) *
+          total,
+        });
+      }
+    }
 
-            Number(
-              item.price
-            ),
-        })
-      );
-
+    const items = Array.from(groupedMap.values());
     /* -------------------------------------------- */
     /* TOTAL */
     /* -------------------------------------------- */
 
-    const totalAmount =
-      items.reduce(
+    const totalAmount = items.reduce(
+      (acc, item) => acc + item.total,
 
-        (acc, item) =>
+      0
+    );
 
-          acc + item.total,
-
-        0
-      );
-
-    const paidAmount =
-      Number(
-        data.paidAmount || 0
-      );
+    const paidAmount = Number(data.paidAmount || 0);
 
     /* -------------------------------------------- */
     /* VALIDATION */
     /* -------------------------------------------- */
 
-    if (
-      paidAmount >
-      totalAmount
-    ) {
-
-      throw new Error(
-
-        "Paid amount cannot exceed total amount"
-      );
+    if (paidAmount > totalAmount) {
+      throw new Error("Paid amount cannot exceed total amount");
     }
 
     /* -------------------------------------------- */
     /* STATUS */
     /* -------------------------------------------- */
 
-    let status =
-      "PENDING";
+    let status = "PENDING";
 
-    if (
-      paidAmount >=
-      totalAmount
-    ) {
-
+    if (paidAmount >= totalAmount) {
       status = "PAID";
-
-    } else if (
-      paidAmount > 0
-    ) {
-
-      status =
-        "PARTIAL";
+    } else if (paidAmount > 0) {
+      status = "PARTIAL";
     }
 
     /* -------------------------------------------- */
     /* CREATE SALE */
     /* -------------------------------------------- */
 
-    const sale =
-      await Sale.create(
+    const sale = await Sale.create(
+      [
+        {
+          ...data,
 
-        [
-          {
-            ...data,
+          salesNumber,
 
-            salesNumber,
+          items,
 
-            items,
+          totalAmount,
 
-            totalAmount,
+          paidAmount,
 
-            paidAmount,
+          status,
+        },
+      ],
 
-            status,
-          },
-        ],
+      { session }
+    );
 
-        { session }
-      );
-
-    const saleDoc =
-      sale[0];
+    const saleDoc = sale[0];
 
     /* -------------------------------------------- */
     /* STOCK OUT */
     /* -------------------------------------------- */
 
     for (const item of items) {
-
       await stockService.decreaseStock({
+        itemId: item.itemId,
 
-        itemId:
-          item.itemId,
+        companyId: data.companyId,
 
-        companyId:
-          data.companyId,
+        branchId: data.branchId,
 
-        branchId:
-          data.branchId,
-
-        quantity:
-          item.quantity,
+        quantity: item.quantity,
 
         session,
       });
 
       await stockTransactionService.createStockTransaction(
-
         {
-          itemId:
-            item.itemId,
+          itemId: item.itemId,
 
-          companyId:
-            data.companyId,
+          companyId: data.companyId,
 
-          branchId:
-            data.branchId,
+          branchId: data.branchId,
 
           type: "OUT",
 
-          quantity:
-            item.quantity,
+          quantity: item.quantity,
 
-          referenceType:
-            "SALE",
+          referenceType: "SALE",
 
-          referenceId:
-            saleDoc._id,
+          referenceId: saleDoc._id,
         },
 
         session
@@ -517,30 +168,22 @@ const createSale = async (
     /* -------------------------------------------- */
 
     await ledgerService.createLedgerEntry(
-
       {
-        partyId:
-          data.partyId,
+        partyId: data.partyId,
 
-        companyId:
-          data.companyId,
+        companyId: data.companyId,
 
-        branchId:
-          data.branchId,
+        branchId: data.branchId,
 
         type: "DEBIT",
 
-        amount:
-          totalAmount,
+        amount: totalAmount,
 
-        referenceType:
-          "SALE",
+        referenceType: "SALE",
 
-        referenceId:
-          saleDoc._id,
+        referenceId: saleDoc._id,
 
-        description:
-          `Invoice ${salesNumber} generated for customer sale`,
+        description: `Invoice ${salesNumber} generated for customer sale`,
       },
 
       session
@@ -550,35 +193,24 @@ const createSale = async (
     /* PAYMENT RECEIVED */
     /* -------------------------------------------- */
 
-    if (
-      paidAmount > 0
-    ) {
-
+    if (paidAmount > 0) {
       await ledgerService.createLedgerEntry(
-
         {
-          partyId:
-            data.partyId,
+          partyId: data.partyId,
 
-          companyId:
-            data.companyId,
+          companyId: data.companyId,
 
-          branchId:
-            data.branchId,
+          branchId: data.branchId,
 
           type: "CREDIT",
 
-          amount:
-            paidAmount,
+          amount: paidAmount,
 
-          referenceType:
-            "RECEIPT",
+          referenceType: "RECEIPT",
 
-          referenceId:
-            saleDoc._id,
+          referenceId: saleDoc._id,
 
-          description:
-            `Payment received against Invoice ${salesNumber} via ${data.paymentMode?.toUpperCase()}`,
+          description: `Payment received against Invoice ${salesNumber} via ${data.paymentMode?.toUpperCase()}`,
         },
 
         session
@@ -594,9 +226,7 @@ const createSale = async (
     session.endSession();
 
     return saleDoc;
-
   } catch (error) {
-
     await session.abortTransaction();
 
     session.endSession();
@@ -609,77 +239,41 @@ const createSale = async (
 /* GET SALES */
 /* ------------------------------------------------ */
 
-const getAllSales = async (
-  companyId,
-  branchId
-) => {
-
+const getAllSales = async (companyId, branchId) => {
   try {
-
     return await Sale.find({
-
       companyId,
 
       branchId,
     })
 
-      .populate(
-        "partyId",
-        "name phone"
-      )
+      .populate("partyId", "name phone")
 
-      .populate(
-        "items.itemId",
-        "name sku unit"
-      )
+      .populate("items.itemId", "name sku unit")
 
       .sort({
         createdAt: -1,
       });
-
   } catch (error) {
-
-    throw new Error(
-
-      "Error fetching sales from database"
-    );
+    throw new Error("Error fetching sales from database");
   }
 };
 
-const getSaleById = async (
-  saleId,
-  companyId,
-  branchId
-) => {
+const getSaleById = async (saleId, companyId, branchId) => {
   try {
-
     return await Sale.findOne({
       _id: saleId,
       companyId,
       branchId,
     })
-      .populate(
-        "partyId",
-        "name phone"
-      )
-      .populate(
-        "items.itemId",
-        "name sku unit"
-      );
+      .populate("partyId", "name phone")
+      .populate("items.itemId", "name sku unit");
+  } catch (error) {
+    throw new Error("Error fetching sale from database");
   }
-
-
-  catch (error) {
-
-    throw new Error(
-      "Error fetching sale from database"
-    );
-  }
-}
-
+};
 
 module.exports = {
-
   createSale,
   getSaleById,
   getAllSales,

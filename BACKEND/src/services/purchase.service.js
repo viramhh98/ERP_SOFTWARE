@@ -270,7 +270,7 @@ const createPurchase = async (data) => {
     /* LEDGER CREDIT */
     /* -------------------------------------------- */
 
-    await ledgerService.createLedger(
+    await ledgerService.createLedgerEntry(
       {
         partyId: data.partyId,
 
@@ -297,7 +297,7 @@ const createPurchase = async (data) => {
     /* -------------------------------------------- */
 
     if (paidAmount > 0) {
-      await ledgerService.createLedger(
+      await ledgerService.createLedgerEntry(
         {
           partyId: data.partyId,
 

@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import ThermalInvoice from "../../components/print/ThermalInvoice";
+
 import MainLayout from "../../layouts/MainLayout";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -6,6 +9,7 @@ import {
   Plus,
   Trash2,
   Save,
+  Printer,
   Wallet,
   User,
   UserPlus,
@@ -103,13 +107,16 @@ const SearchableSelect = ({
                   }}
                 >
                   <div>
-                    <div className="font-bold text-slate-700">{opt.label}</div>
-
-                    {opt.phone && (
-                      <div className="text-[10px] font-black text-slate-400 mt-1">
-                        {opt.phone}
+                    <div>
+                      <div className="font-bold text-slate-700">
+                        {opt.label}
+                        {opt.sku && (
+                          <span className="ml-2 px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-500 rounded-full">
+                             {opt.sku}
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -141,6 +148,10 @@ const CreateSales = () => {
     notes: "",
   });
 
+  const [createdSale, setCreatedSale] = useState(null);
+  const [shouldPrint, setShouldPrint] = useState(false);
+  const printRef = useRef(null);
+
   const [showAddPanel, setShowAddPanel] = useState(false);
 
   const [customerForm, setCustomerForm] = useState({
@@ -161,6 +172,7 @@ const CreateSales = () => {
         api.get("/item", config),
         api.get("/party/filter?type=customer", config),
       ]);
+      console.log("ITEMS:", itemRes.data);
 
       const itemsList = itemRes.data.success
         ? itemRes.data.data
@@ -182,6 +194,11 @@ const CreateSales = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (createdSale && printRef.current) {
+      console.log("PRINT READY");
+    }
+  }, [createdSale]);
   // 🚀 INSTANT BALANCE LOOKUP: Derived directly from the parties list
   const selectedParty = parties.find((p) => p._id === formData.partyId);
 
@@ -250,6 +267,11 @@ const CreateSales = () => {
     }
   };
 
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+
+    documentTitle: "Thermal Invoice",
+  });
   // 🚀 SMART PAYMENT TOGGLE LOGIC
   const handlePaymentToggle = (mode) => {
     // If Credit -> Force 0. If Cash -> Auto-fill the total amount
@@ -257,7 +279,7 @@ const CreateSales = () => {
     updateFormState(formData.items, mode, smartPaidAmount);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, printAfterSave = false) => {
     e.preventDefault();
     if (!formData.partyId) return toast.error("Please select a customer!");
 
@@ -266,6 +288,7 @@ const CreateSales = () => {
       return toast.error("Please add at least one item to the invoice!");
 
     setLoading(true);
+    setShouldPrint(printAfterSave);
     try {
       const actualPaid = Math.min(
         Number(formData.paidAmount),
@@ -279,22 +302,73 @@ const CreateSales = () => {
         paidAmount: actualPaid,
       };
 
-      await api.post("/sales", payload);
+      const saleRes = await api.post("/sales", payload);
+
+      const createdSaleId = saleRes?.data?.data?._id;
+
       toast.success("Sales Invoice Saved!");
 
-      // Reset Form
-      setFormData({
-        partyId: "",
-        purchaseDate: new Date().toISOString().split("T")[0],
-        items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
-        totalAmount: 0,
-        paymentMode: "credit",
-        paidAmount: 0,
-        notes: "",
-      });
+      if (createdSaleId) {
+        const detailRes = await api.get(`/sales/${createdSaleId}`);
 
-      // Refresh Data to get updated Party Balance
-      fetchData();
+        const fullSale = detailRes.data.data;
+
+        console.log("FULL SALE:", fullSale);
+
+        setCreatedSale(fullSale);
+
+        if (printAfterSave) {
+          setTimeout(() => {
+            if (printRef.current) {
+              handlePrint();
+
+              // RESET FORM AFTER PRINT
+
+              setFormData({
+                partyId: "",
+                purchaseDate: new Date().toISOString().split("T")[0],
+                items: [
+                  {
+                    itemId: "",
+                    quantity: 1,
+                    price: 0,
+                    total: 0,
+                  },
+                ],
+                totalAmount: 0,
+                paymentMode: "credit",
+                paidAmount: 0,
+                notes: "",
+              });
+
+              setCreatedSale(null);
+            }
+          }, 800);
+        }
+
+        // Reset Form
+        if (!printAfterSave) {
+          setFormData({
+            partyId: "",
+            purchaseDate: new Date().toISOString().split("T")[0],
+            items: [
+              {
+                itemId: "",
+                quantity: 1,
+                price: 0,
+                total: 0,
+              },
+            ],
+            totalAmount: 0,
+            paymentMode: "credit",
+            paidAmount: 0,
+            notes: "",
+          });
+        }
+
+        // Refresh Data to get updated Party Balance
+        fetchData();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Transaction Failed");
     } finally {
@@ -307,12 +381,12 @@ const CreateSales = () => {
     label: p.name,
     phone: p.phone || "",
   }));
- 
-  
+
   const itemOptions = availableItems.map((i) => ({
-    value: i._id,
-    label: i.name,
-  }));
+  value: i._id,
+  label: i.name,
+  sku: i.sku,
+}));
 
   return (
     <MainLayout>
@@ -337,7 +411,16 @@ const CreateSales = () => {
               />
             </button>
             <button
-              onClick={handleSubmit}
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              disabled={loading}
+              className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all flex items-center gap-2"
+            >
+              <Printer size={18} />
+              Save & Print
+            </button>
+            <button
+              onClick={(e) => handleSubmit(e, false)}
               disabled={loading}
               className="px-10 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-xl hover:bg-emerald-700 transition-all flex items-center gap-2"
             >
@@ -830,6 +913,15 @@ const CreateSales = () => {
           </div>
         </div>
       )}
+      <div
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: 0,
+        }}
+      >
+        <ThermalInvoice ref={printRef} sale={createdSale} />
+      </div>
     </MainLayout>
   );
 };
