@@ -149,6 +149,182 @@ const getPartyLedger = async (
 /* POST PAYMENT / RECEIPT */
 /* -------------------------------------------- */
 
+// const postPayment = async (
+//   req,
+//   res
+// ) => {
+
+//   const session =
+//     await mongoose.startSession();
+
+//   session.startTransaction();
+
+//   try {
+
+//     const {
+
+//       partyId,
+
+//       amount,
+
+//       paymentMode,
+
+//       description,
+
+//       referenceId,
+//     } = req.body;
+
+//     const companyId =
+//       req.user.activeCompanyId;
+
+//     const branchId =
+//       req.user.activeBranchId;
+
+//     /* VALIDATION */
+
+//     if (
+//       !amount ||
+
+//       Number(amount) <= 0
+//     ) {
+
+//       throw new Error(
+//         "Invalid payment amount"
+//       );
+//     }
+
+//     /* FIND PARTY */
+
+//     const party =
+//       await Party.findById(
+//         partyId
+//       ).session(session);
+
+//     if (!party) {
+
+//       throw new Error(
+//         "Party not found"
+//       );
+//     }
+
+//     /* -------------------------------------------- */
+//     /* ENTRY TYPE */
+//     /* -------------------------------------------- */
+
+//     /*
+//       SUPPLIER:
+//       DEBIT -> decreases payable
+
+//       CUSTOMER:
+//       CREDIT -> decreases receivable
+//     */
+
+//     const entryType =
+
+//       party.type === "supplier"
+
+//         ? "DEBIT"
+
+//         : "CREDIT";
+
+//     /* -------------------------------------------- */
+//     /* REFERENCE TYPE */
+//     /* -------------------------------------------- */
+
+//     const referenceType =
+
+//       party.type === "supplier"
+
+//         ? "PURCHASE_PAYMENT"
+
+//         : "RECEIPT";
+
+//     /* -------------------------------------------- */
+//     /* CREATE ENTRY */
+//     /* -------------------------------------------- */
+
+//     const paymentData = {
+
+//       partyId,
+
+//       companyId,
+
+//       branchId,
+
+//       type:
+//         entryType,
+
+//       amount:
+//         Number(amount),
+
+//       referenceType,
+
+//       referenceId:
+
+//         referenceId ||
+
+//         new mongoose.Types.ObjectId(),
+
+//       description:
+
+//         description ||
+
+//         `${
+//           party.type ===
+//           "supplier"
+
+//             ? "Payment Out"
+
+//             : "Receipt In"
+//         } via ${paymentMode}`,
+//     };
+
+//     const entry =
+//       await ledgerService.createLedgerEntry(
+
+//         paymentData,
+
+//         session
+//       );
+
+//     /* COMMIT */
+
+//     await session.commitTransaction();
+
+//     session.endSession();
+
+//     res.status(201).json({
+
+//       success: true,
+
+//       message:
+
+//         party.type ===
+//         "supplier"
+
+//           ? "Supplier payment recorded"
+
+//           : "Customer receipt recorded",
+
+//       data: entry,
+//     });
+
+//   } catch (error) {
+
+//     await session.abortTransaction();
+
+//     session.endSession();
+
+//     res.status(500).json({
+
+//       success: false,
+
+//       message:
+//         error.message,
+//     });
+//   }
+// };
+
 const postPayment = async (
   req,
   res
@@ -162,15 +338,10 @@ const postPayment = async (
   try {
 
     const {
-
       partyId,
-
       amount,
-
       paymentMode,
-
       description,
-
       referenceId,
     } = req.body;
 
@@ -184,10 +355,8 @@ const postPayment = async (
 
     if (
       !amount ||
-
       Number(amount) <= 0
     ) {
-
       throw new Error(
         "Invalid payment amount"
       );
@@ -196,52 +365,47 @@ const postPayment = async (
     /* FIND PARTY */
 
     const party =
-      await Party.findById(
-        partyId
-      ).session(session);
+      await Party.findOne({
+        _id: partyId,
+        companyId,
+      }).session(session);
 
     if (!party) {
-
       throw new Error(
         "Party not found"
       );
     }
 
-    /* -------------------------------------------- */
+    /* VALIDATE TYPE */
+
+    if (
+      ![
+        "supplier",
+        "customer",
+      ].includes(party.type)
+    ) {
+      throw new Error(
+        "Invalid party type"
+      );
+    }
+
     /* ENTRY TYPE */
-    /* -------------------------------------------- */
-
-    /*
-      SUPPLIER:
-      DEBIT -> decreases payable
-
-      CUSTOMER:
-      CREDIT -> decreases receivable
-    */
 
     const entryType =
 
       party.type === "supplier"
-
         ? "DEBIT"
-
         : "CREDIT";
 
-    /* -------------------------------------------- */
     /* REFERENCE TYPE */
-    /* -------------------------------------------- */
 
     const referenceType =
 
       party.type === "supplier"
-
         ? "PURCHASE_PAYMENT"
-
         : "RECEIPT";
 
-    /* -------------------------------------------- */
-    /* CREATE ENTRY */
-    /* -------------------------------------------- */
+    /* CREATE LEDGER ENTRY */
 
     const paymentData = {
 
@@ -251,59 +415,72 @@ const postPayment = async (
 
       branchId,
 
-      type:
-        entryType,
+      type: entryType,
 
-      amount:
-        Number(amount),
+      amount: Number(amount),
 
       referenceType,
 
       referenceId:
-
         referenceId ||
-
         new mongoose.Types.ObjectId(),
 
       description:
-
         description ||
-
         `${
           party.type ===
           "supplier"
-
             ? "Payment Out"
-
             : "Receipt In"
         } via ${paymentMode}`,
     };
 
     const entry =
       await ledgerService.createLedgerEntry(
-
         paymentData,
-
         session
       );
+
+    /* UPDATE PARTY BALANCE */
+
+    const paymentAmount =
+      Number(amount);
+
+    if (
+      party.type === "customer"
+    ) {
+
+      // customer receipt reduces receivable
+
+      party.balance -=
+        paymentAmount;
+
+    } else if (
+      party.type === "supplier"
+    ) {
+
+      // supplier payment reduces payable
+
+      party.balance -=
+        paymentAmount;
+    }
+
+    await party.save({
+      session,
+    });
 
     /* COMMIT */
 
     await session.commitTransaction();
-
-    session.endSession();
 
     res.status(201).json({
 
       success: true,
 
       message:
-
         party.type ===
         "supplier"
-
           ? "Supplier payment recorded"
-
           : "Customer receipt recorded",
 
       data: entry,
@@ -313,8 +490,6 @@ const postPayment = async (
 
     await session.abortTransaction();
 
-    session.endSession();
-
     res.status(500).json({
 
       success: false,
@@ -322,6 +497,10 @@ const postPayment = async (
       message:
         error.message,
     });
+
+  } finally {
+
+    session.endSession();
   }
 };
 
