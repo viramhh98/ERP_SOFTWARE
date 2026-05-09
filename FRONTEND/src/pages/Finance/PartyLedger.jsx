@@ -1,28 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import MainLayout from "../../layouts/MainLayout";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import LedgerPrintView from "../../components/print/LedgerPrintView";
 import {
-  IndianRupee,
   Search,
   Printer,
   Eye,
   X,
   Loader2,
-  ArrowUpRight,
-  ArrowDownLeft,
-  FileText,
-  ChevronRight,
-  Wallet,
-  Plus,
-  History,
+  RefreshCcw,
+  ChevronDown,
+  ShoppingBag,
+  Receipt,
   Landmark,
-  CreditCard,
-  User,
+  Plus,
+  Phone,
 } from "lucide-react";
 
 const PartyLedger = () => {
-  // --- 1. DATA STATES ---
   const [parties, setParties] = useState([]);
   const [selectedParty, setSelectedParty] = useState(null);
   const [ledgerEntries, setLedgerEntries] = useState([]);
@@ -32,41 +29,51 @@ const PartyLedger = () => {
     totalSettled: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
-  // --- 2. MODAL STATES ---
+  // Search State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Modal & Voucher States
   const [showDocModal, setShowDocModal] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [docData, setDocData] = useState(null);
   const [docItems, setDocItems] = useState([]);
-  const [payData, setPayData] = useState({ amount: 0, mode: "cash", note: "" });
 
-  // --- 3. FETCH ALL PARTIES (SUPPLIERS + CUSTOMERS) ---
+  const printRef = useRef(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Ledger_${selectedParty?.name || "Report"}`,
+  });
+
+  const fetchData = async () => {
+    setSyncing(true);
+    try {
+      const res = await api.get("/party/filter?type=all");
+      setParties(
+        res.data.success
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : []
+      );
+    } catch (err) {
+      toast.error("Refresh Failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchParties = async () => {
-      try {
-        const res = await api.get("/party/filter?type=all");
-        setParties(
-          res.data.success
-            ? res.data.data
-            : Array.isArray(res.data)
-            ? res.data
-            : []
-        );
-      } catch (err) {
-        toast.error("Contacts load nahi ho paye");
-      }
-    };
-    fetchParties();
+    fetchData();
   }, []);
 
-  // --- 4. FETCH LEDGER & INTELLIGENT BALANCE ---
   const fetchLedger = async (partyId) => {
-    if (!partyId) return;
     setLoading(true);
+    setIsDropdownOpen(false);
     const party = parties.find((p) => p._id === partyId);
     setSelectedParty(party);
-
     try {
       const res = await api.get(`/ledger/${partyId}`);
       const entries = res.data.data || [];
@@ -81,261 +88,271 @@ const PartyLedger = () => {
         0
       );
 
-      // 🔥 ACCOUNTING LOGIC:
-      // Customer: Sale (Debit) - Receipt (Credit)
-      // Supplier: Purchase (Credit) - Payment (Debit)
-      let netBalance =
-        party.type === "customer" ? debit - credit : credit - debit;
-
       setBalanceData({
-        balance: netBalance,
+        balance: party.type === "customer" ? debit - credit : credit - debit,
         totalInvoiced: party.type === "customer" ? debit : credit,
         totalSettled: party.type === "customer" ? credit : debit,
       });
     } catch (err) {
-      toast.error("Ledger retrieval error");
+      toast.error("Ledger Load Error");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- 5. VIEW DOCUMENT DETAILS (SALE/PURCHASE) ---
   const handleViewDoc = async (refId, refType) => {
     setModalLoading(true);
-
     setShowDocModal(true);
-
     try {
       const endpoint =
         refType === "PURCHASE" ? `/purchase/${refId}` : `/sales/${refId}`;
-
       const res = await api.get(endpoint);
-
       const data = res.data.data;
-
       setDocData(data);
-
-      /* -------------------------------- */
-      /* HANDLE BOTH CASES */
-      /* -------------------------------- */
-
-      const formattedItems = data.items.map((item) => {
-        /* ITEM POPULATED */
-
-        if (typeof item.itemId === "object" && item.itemId !== null) {
-          return {
-            ...item,
-
-            details: item.itemId,
-          };
-        }
-
-        /* ITEM NOT POPULATED */
-
-        return {
-          ...item,
-
-          details: {
-            name: "Item Data Missing",
-
-            sku: item.itemId,
-          },
-        };
-      });
-
-      console.log("FORMATTED ITEMS:", formattedItems);
-
-      setDocItems(formattedItems);
+      setDocItems(
+        data.items.map((it) => ({
+          ...it,
+          details:
+            typeof it.itemId === "object"
+              ? it.itemId
+              : { name: "Item Missing" },
+        }))
+      );
     } catch (err) {
-      console.log("DOC ERROR:", err);
-
-      toast.error("Document details missing");
-
+      toast.error("Voucher error");
       setShowDocModal(false);
     } finally {
       setModalLoading(false);
     }
   };
 
-  // --- 6. RECORD TRANSACTION (PAYMENT/RECEIPT) ---
-  const handleTransactionSubmit = async (e) => {
-    e.preventDefault();
-    if (payData.amount <= 0) return toast.error("Enter valid amount");
-
-    setLoading(true);
-    try {
-      await api.post("/ledger/payment", {
-        partyId: selectedParty._id,
-        amount: payData.amount,
-        paymentMode: payData.mode,
-        description: payData.note,
-      });
-      toast.success(
-        selectedParty.type === "customer"
-          ? "Receipt Recorded"
-          : "Payment Recorded"
-      );
-      setShowPayModal(false);
-      setPayData({ amount: 0, mode: "cash", note: "" });
-      fetchLedger(selectedParty._id);
-    } catch (err) {
-      toast.error("Transaction Sync Failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const filteredParties = parties.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.phone && p.phone.includes(searchTerm))
+  );
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-[#F8FAFC] p-4 lg:p-10 font-inter text-slate-700">
-        {/* --- HEADER & SELECTOR --- */}
-        <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-end gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest mb-2">
-              Financial Control <ChevronRight size={12} /> Universal Ledger
-            </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-              Party Account
-            </h1>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-            <div className="relative">
-              <Search
-                className="absolute left-4 top-4 text-slate-400"
-                size={18}
-              />
-              <select
-                className="h-14 pl-12 pr-10 bg-white border border-slate-200 rounded-2xl shadow-sm font-bold text-slate-700 outline-none appearance-none min-w-[320px]"
-                onChange={(e) => fetchLedger(e.target.value)}
-              >
-                <option value="">Search Supplier or Customer...</option>
-                {parties.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.type === "supplier" ? "📦 SUP" : "👥 CUST"})
-                  </option>
-                ))}
-              </select>
+      <div className="min-h-screen bg-[#F6F8FC]">
+        {/* --- PREMIUM HEADER --- */}
+        <div className="fixed top-[72px] left-0 lg:left-[280px] right-0 z-40 bg-[#F6F8FC]/95 backdrop-blur-xl border-b border-slate-200">
+          <div className="px-8 h-[92px] flex items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <span className="uppercase tracking-[0.3em] text-[10px] font-black text-indigo-600">
+                  Accounting / Ledger
+                </span>
+              </div>
+              <h1 className="text-[32px] font-black tracking-tighter text-slate-900 leading-none">
+                Party Ledger
+              </h1>
             </div>
 
-            {selectedParty && (
+            <div className="flex items-center gap-3">
+              {/* STABLE DROPWDOWN UI */}
+              <div className="relative">
+                <div
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="h-12 w-[320px] bg-white border border-slate-200 rounded-2xl flex items-center justify-between px-5 cursor-pointer shadow-sm hover:border-indigo-400 transition-all group"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    {/* Party Type Badge */}
+                    {selectedParty && (
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                          selectedParty.type === "customer"
+                            ? "bg-emerald-100 text-emerald-600" // Customer ke liye Emerald/Greenish
+                            : "bg-amber-100 text-amber-600" // Supplier ke liye Amber/Yellow
+                        }`}
+                      >
+                        {selectedParty.type}
+                      </span>
+                    )}
+
+                    {/* Party Name */}
+                    <span
+                      className={`text-sm font-bold truncate max-w-[200px] ${
+                        selectedParty ? "text-slate-900" : "text-slate-400"
+                      }`}
+                    >
+                      {selectedParty ? selectedParty.name : "Choose a Party..."}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={20}
+                    className={`text-slate-400 transition-transform duration-300 ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-full bg-white border border-slate-200 rounded-[24px] shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-3 border-b border-slate-50 bg-slate-50/50">
+                      <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-10 shadow-inner">
+                        <Search size={14} className="text-slate-400" />
+                        <input
+                          autoFocus
+                          className="w-full bg-transparent outline-none text-sm font-bold"
+                          placeholder="Search name or phone..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto">
+                      {filteredParties.map((p) => (
+                        <div
+                          key={p._id}
+                          onClick={() => fetchLedger(p._id)}
+                          className="px-5 py-4 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 flex justify-between items-center group transition-colors"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-slate-800 group-hover:text-indigo-700">
+                              {p.name}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-tighter">
+                              <Phone size={8} /> {p.phone || "No Phone"}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`text-[10px] font-black px-2 py-0.5 rounded-md mb-1 uppercase ${
+                                p.type === "customer"
+                                  ? "bg-emerald-100 text-emerald-600"
+                                  : "bg-amber-100 text-amber-600"
+                              }`}
+                            >
+                              {p.type}
+                            </div>
+                            <div className="text-xs font-black text-slate-900">
+                              ₹{p.balance.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
-                onClick={() => setShowPayModal(true)}
-                className={`h-14 px-8 text-white rounded-2xl font-black shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 ${
-                  selectedParty.type === "customer"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-indigo-600 hover:bg-indigo-700"
-                }`}
+                onClick={fetchData}
+                className="h-11 w-11 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-all active:scale-95"
               >
-                <Plus size={18} strokeWidth={3} />{" "}
-                {selectedParty.type === "customer"
-                  ? "Receipt In"
-                  : "Payment Out"}
+                <RefreshCcw
+                  size={17}
+                  className={
+                    syncing ? "animate-spin text-indigo-600" : "text-slate-500"
+                  }
+                />
               </button>
-            )}
+
+              {selectedParty && (
+                <button
+                  onClick={handlePrint}
+                  className="h-11 px-6 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2 shadow-lg hover:shadow-indigo-200 hover:bg-indigo-600 transition-all active:scale-95"
+                >
+                  <Printer size={16} /> Print Report
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {selectedParty ? (
-          <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-            {/* --- SUMMARY BENTO CARDS --- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div
-                className={`rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden ${
-                  balanceData.balance >= 0 ? "bg-slate-900" : "bg-rose-900"
-                }`}
-              >
-                <p className="text-slate-500 font-black text-[10px] uppercase tracking-widest mb-2">
-                  Net{" "}
-                  {selectedParty.type === "customer" ? "Receivable" : "Payable"}
-                </p>
-                <h2 className="text-5xl font-black tracking-tighter">
-                  ₹{Math.abs(balanceData.balance).toLocaleString()}
-                </h2>
-                <div className="mt-4 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                  {balanceData.balance >= 0
-                    ? "Pending Balance"
-                    : "Advance Settlement"}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
-                    Total{" "}
-                    {selectedParty.type === "customer" ? "Sales" : "Purchase"}
+        {/* --- CONTENT --- */}
+        <div className="px-8 pt-[190px] pb-10">
+          {selectedParty ? (
+            <div className="space-y-6">
+              {/* STATS BENTO */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div
+                  className={`rounded-[32px] p-8 text-white shadow-xl relative overflow-hidden group ${
+                    balanceData.balance >= 0 ? "bg-slate-900" : "bg-rose-600"
+                  }`}
+                >
+                  <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                    <Landmark size={120} />
+                  </div>
+                  <p className="text-white/60 font-black text-[10px] uppercase tracking-[0.2em] mb-1">
+                    Net Balance
                   </p>
-                  <h3 className="text-2xl font-black text-slate-800">
-                    ₹{balanceData.totalInvoiced.toLocaleString()}
-                  </h3>
+                  <h2 className="text-4xl font-black">
+                    ₹{Math.abs(balanceData.balance).toLocaleString()}
+                  </h2>
+                  <span className="mt-4 inline-block text-[9px] font-black uppercase bg-white/20 px-3 py-1 rounded-full tracking-widest">
+                    {balanceData.balance >= 0
+                      ? "Account Receivable"
+                      : "Account Payable"}
+                  </span>
                 </div>
-                <div className="p-4 bg-rose-50 text-rose-500 rounded-2xl">
-                  <ArrowUpRight size={24} />
+
+                <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm flex items-center justify-between group hover:border-indigo-200 transition-all">
+                  <div>
+                    <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
+                      Total{" "}
+                      {selectedParty.type === "customer" ? "Sales" : "Purchase"}
+                    </p>
+                    <h3 className="text-3xl font-black text-slate-900">
+                      ₹{balanceData.totalInvoiced.toLocaleString()}
+                    </h3>
+                  </div>
+                  <div className="h-14 w-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <ShoppingBag size={24} />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-all">
+                  <div>
+                    <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
+                      Total{" "}
+                      {selectedParty.type === "customer" ? "Received" : "Paid"}
+                    </p>
+                    <h3 className="text-3xl font-black text-slate-900">
+                      ₹{balanceData.totalSettled.toLocaleString()}
+                    </h3>
+                  </div>
+                  <div className="h-14 w-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Receipt size={24} />
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1">
-                    Total{" "}
-                    {selectedParty.type === "customer" ? "Received" : "Paid"}
-                  </p>
-                  <h3 className="text-2xl font-black text-slate-800">
-                    ₹{balanceData.totalSettled.toLocaleString()}
-                  </h3>
-                </div>
-                <div className="p-4 bg-emerald-50 text-emerald-500 rounded-2xl">
-                  <ArrowDownLeft size={24} />
-                </div>
-              </div>
-            </div>
-
-            {/* --- LEDGER TABLE --- */}
-            <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                <h3 className="font-black text-slate-800 flex items-center gap-2 uppercase text-xs tracking-widest">
-                  <History size={18} className="text-indigo-500" /> Account
-                  Statement
-                </h3>
-                <button className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-900 hover:text-white transition-all shadow-sm">
-                  <Printer size={18} />
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
-                      <th className="px-8 py-5">Date</th>
-                      <th className="px-8 py-5">Description</th>
-                      <th className="px-8 py-5 text-right">Debit (+)</th>
-                      <th className="px-8 py-5 text-right">Credit (-)</th>
-                      <th className="px-8 py-5 text-center">Docs</th>
+              {/* TABLE */}
+              <div className="rounded-[32px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-slate-50/50 border-b border-slate-100">
+                    <tr className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-left">
+                      <th className="px-8 py-6">Date / Ref</th>
+                      <th className="px-8 py-6">Description</th>
+                      <th className="px-8 py-6 text-right">Debit (+)</th>
+                      <th className="px-8 py-6 text-right">Credit (-)</th>
+                      <th className="px-8 py-6 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-bold">
                     {ledgerEntries.map((entry, idx) => (
                       <tr
                         key={idx}
-                        className="group hover:bg-slate-50/50 transition-all"
+                        className="hover:bg-slate-50/80 transition-all"
                       >
-                        <td className="px-8 py-6 text-sm text-slate-400">
-                          {new Date(entry.createdAt).toLocaleDateString(
-                            "en-GB"
-                          )}
-                        </td>
                         <td className="px-8 py-6">
-                          <div className="text-sm text-slate-700">
-                            {entry.description}
+                          <div className="text-sm text-slate-900">
+                            {new Date(entry.createdAt).toLocaleDateString(
+                              "en-GB"
+                            )}
                           </div>
-                          <div className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">
+                          <div className="text-[9px] text-indigo-500 font-black uppercase mt-1 tracking-wider">
                             {entry.referenceType}
                           </div>
                         </td>
-
-                        {/* 🔴 DEBIT COLUMN Logic Fix */}
+                        <td className="px-8 py-6 text-sm text-slate-500">
+                          {entry.description}
+                        </td>
                         <td
-                          className={`px-8 py-6 text-right ${
+                          className={`px-8 py-6 text-right text-sm ${
                             entry.type === "DEBIT"
                               ? selectedParty.type === "customer"
                                 ? "text-rose-600"
@@ -343,14 +360,13 @@ const PartyLedger = () => {
                               : "text-slate-300"
                           }`}
                         >
+                          ₹
                           {entry.type === "DEBIT"
-                            ? `₹${entry.amount.toLocaleString()}`
+                            ? entry.amount.toLocaleString()
                             : "—"}
                         </td>
-
-                        {/* 🟢 CREDIT COLUMN Logic Fix */}
                         <td
-                          className={`px-8 py-6 text-right ${
+                          className={`px-8 py-6 text-right text-sm ${
                             entry.type === "CREDIT"
                               ? selectedParty.type === "customer"
                                 ? "text-emerald-600"
@@ -358,11 +374,11 @@ const PartyLedger = () => {
                               : "text-slate-300"
                           }`}
                         >
+                          ₹
                           {entry.type === "CREDIT"
-                            ? `₹${entry.amount.toLocaleString()}`
+                            ? entry.amount.toLocaleString()
                             : "—"}
                         </td>
-
                         <td className="px-8 py-6 text-center">
                           {(entry.referenceType === "PURCHASE" ||
                             entry.referenceType === "SALE") && (
@@ -373,9 +389,9 @@ const PartyLedger = () => {
                                   entry.referenceType
                                 )
                               }
-                              className="p-2.5 bg-slate-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all group-hover:scale-110"
+                              className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all mx-auto shadow-sm"
                             >
-                              <Eye size={16} />
+                              <Eye size={18} />
                             </button>
                           )}
                         </td>
@@ -385,61 +401,73 @@ const PartyLedger = () => {
                 </table>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="max-w-7xl mx-auto h-[60vh] border-2 border-dashed border-slate-200 rounded-[3rem] flex flex-col items-center justify-center text-slate-400 gap-4">
-            <Landmark size={64} strokeWidth={1} />
-            <p className="font-bold text-xs uppercase tracking-widest italic">
-              Universal Ledger: Search Supplier or Customer to load history
-            </p>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center py-40 bg-white rounded-[40px] border-2 border-dashed border-slate-200">
+              <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                <Landmark size={40} className="text-slate-200" />
+              </div>
+              <h2 className="text-xl font-black text-slate-900">
+                No Account Selected
+              </h2>
+              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">
+                Search party name in the header to view statement
+              </p>
+            </div>
+          )}
+        </div>
 
-        {/* --- DYNAMIC DOC MODAL --- */}
+        {/* --- VOUCHER MODAL --- */}
         {showDocModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95">
-              <div className="p-8 bg-slate-50 border-b flex justify-between items-center font-black uppercase text-xs tracking-widest">
-                <span>Reference Snapshot</span>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="px-10 py-8 border-b flex justify-between items-center bg-slate-50/50">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">
+                    Transaction Voucher
+                  </h3>
+                  <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                    {docData?.invoiceNo || docData?.purchaseNo || "Voucher"}
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowDocModal(false)}
-                  className="p-2 hover:bg-rose-100 rounded-xl transition-all"
+                  className="h-12 w-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center hover:text-rose-500 shadow-sm transition-all active:scale-90"
                 >
-                  <X size={20} />
+                  <X size={24} />
                 </button>
               </div>
-              <div className="p-8">
+              <div className="p-10">
                 {modalLoading ? (
-                  <div className="flex justify-center py-10">
+                  <div className="flex flex-col items-center py-20 gap-4">
                     <Loader2
                       className="animate-spin text-indigo-600"
-                      size={32}
+                      size={40}
                     />
-                    <p className="ml-2 font-bold text-slate-400">
-                      Loading SKU...
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                      Fetching Bill Details...
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="rounded-3xl border border-slate-100 overflow-hidden bg-white shadow-sm font-bold">
-                      <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-[10px] text-slate-400 uppercase tracking-widest">
+                  <div className="space-y-8">
+                    <div className="rounded-[24px] border border-slate-100 overflow-hidden shadow-sm">
+                      <table className="w-full text-sm font-bold">
+                        <thead className="bg-slate-50/50 text-[10px] font-black uppercase text-slate-400 border-b">
                           <tr className="text-left">
-                            <th className="px-6 py-4">Item Name</th>
+                            <th className="px-6 py-4">Product Name</th>
                             <th className="px-6 py-4 text-center">Qty</th>
-                            <th className="px-6 py-4 text-right">Total</th>
+                            <th className="px-6 py-4 text-right">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                           {docItems.map((it, i) => (
                             <tr key={i}>
-                              <td className="px-6 py-4">
-                                {it.details?.name || "SKU Code: " + it.itemId}
+                              <td className="px-6 py-4 text-slate-700">
+                                {it.details?.name}
                               </td>
-                              <td className="px-6 py-4 text-center text-slate-400">
+                              <td className="px-6 py-4 text-center text-slate-900 font-black">
                                 {it.quantity}
                               </td>
-                              <td className="px-6 py-4 text-right font-black">
+                              <td className="px-6 py-4 text-right text-slate-900 font-black">
                                 ₹{it.total.toLocaleString()}
                               </td>
                             </tr>
@@ -447,11 +475,16 @@ const PartyLedger = () => {
                         </tbody>
                       </table>
                     </div>
-                    <div className="flex justify-between items-center bg-slate-900 text-white p-6 rounded-[2rem]">
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        Grand Total Bill
-                      </span>
-                      <span className="text-3xl font-black tracking-tighter">
+                    <div className="p-8 bg-slate-900 text-white rounded-[32px] flex justify-between items-center shadow-2xl shadow-indigo-200/20">
+                      <div>
+                        <p className="text-[11px] uppercase font-black opacity-40 tracking-[0.2em]">
+                          Grand Total
+                        </p>
+                        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest italic mt-1">
+                          Inclusive of GST
+                        </p>
+                      </div>
+                      <span className="text-4xl font-black tracking-tighter italic">
                         ₹{docData?.totalAmount.toLocaleString()}
                       </span>
                     </div>
@@ -462,81 +495,14 @@ const PartyLedger = () => {
           </div>
         )}
 
-        {/* --- TRANSACTION MODAL (PAYMENT/RECEIPT) --- */}
-        {showPayModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-8 border border-slate-200">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tighter">
-                  <Wallet
-                    className={
-                      selectedParty.type === "customer"
-                        ? "text-emerald-600"
-                        : "text-indigo-600"
-                    }
-                  />
-                  {selectedParty.type === "customer"
-                    ? "Receipt In"
-                    : "Payment Out"}
-                </h3>
-
-                <button
-                  onClick={() => setShowPayModal(false)}
-                  className="p-2 hover:bg-rose-100 rounded-xl transition-all"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <form onSubmit={handleTransactionSubmit} className="space-y-6">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Received/Paid Amount
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={payData.amount}
-                    onChange={(e) =>
-                      setPayData({ ...payData, amount: e.target.value })
-                    }
-                    className="w-full h-14 px-5 bg-slate-50 border-none rounded-2xl font-black text-2xl outline-none focus:ring-2 focus:ring-indigo-100"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Mode of Transaction
-                  </label>
-                  <div className="flex bg-slate-100 p-1 rounded-2xl">
-                    {["cash", "upi", "cheque"].map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setPayData({ ...payData, mode: m })}
-                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${
-                          payData.mode === m
-                            ? "bg-white text-indigo-600 shadow-sm"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className={`w-full h-14 text-white rounded-2xl font-black text-sm uppercase shadow-xl transition-all active:scale-95 ${
-                    selectedParty.type === "customer"
-                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
-                      : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
-                  }`}
-                >
-                  Confirm Transaction
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
+        <div style={{ display: "none" }}>
+          <LedgerPrintView
+            ref={printRef}
+            selectedParty={selectedParty}
+            ledgerEntries={ledgerEntries}
+            balanceData={balanceData}
+          />
+        </div>
       </div>
     </MainLayout>
   );
