@@ -26,6 +26,7 @@ const getItems = async (req, res) => {
 
     const items = await itemService.getItems(companyId);
 
+    console.log("Items fetched for companyId:", companyId, items); // Debug log
     res.json({
       success: true,
       data: items,

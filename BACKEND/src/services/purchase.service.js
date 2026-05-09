@@ -106,12 +106,13 @@
 // module.exports = { createPurchase, getPurchases, getPurchaseById };
 
 // services/purchase.service.js
-
 const mongoose = require("mongoose");
 
 const Purchase = require("../models/purchase.model");
 
 const Party = require("../models/party.model");
+
+const Item = require("../models/item.model");
 
 const stockService = require("./stock.service");
 
@@ -163,7 +164,6 @@ const createPurchase = async (data) => {
 
     const totalAmount = items.reduce(
       (acc, item) => acc + item.total,
-
       0
     );
 
@@ -233,37 +233,45 @@ const createPurchase = async (data) => {
     /* -------------------------------------------- */
 
     for (const item of items) {
-      await stockService.increaseStock({
-        itemId: item.itemId,
 
-        companyId: data.companyId,
+      // fetch actual item
+      const dbItem = await Item.findById(item.itemId);
 
-        branchId: data.branchId,
+      // maintain stock only if enabled
+      if (dbItem?.maintainStock) {
 
-        quantity: item.quantity,
-
-        session,
-      });
-
-      await stockTransactionService.createStockTransaction(
-        {
+        await stockService.increaseStock({
           itemId: item.itemId,
 
           companyId: data.companyId,
 
           branchId: data.branchId,
 
-          type: "IN",
-
           quantity: item.quantity,
 
-          referenceType: "PURCHASE",
+          session,
+        });
 
-          referenceId: purchaseDoc._id,
-        },
+        await stockTransactionService.createStockTransaction(
+          {
+            itemId: item.itemId,
 
-        session
-      );
+            companyId: data.companyId,
+
+            branchId: data.branchId,
+
+            type: "IN",
+
+            quantity: item.quantity,
+
+            referenceType: "PURCHASE",
+
+            referenceId: purchaseDoc._id,
+          },
+
+          session
+        );
+      }
     }
 
     /* -------------------------------------------- */
@@ -349,7 +357,9 @@ const createPurchase = async (data) => {
     session.endSession();
 
     return purchaseDoc;
+
   } catch (error) {
+
     await session.abortTransaction();
 
     session.endSession();
@@ -371,7 +381,7 @@ const getPurchases = async ({ companyId, branchId }) => {
 
     .populate("partyId", "name phone")
 
-    .populate("items.itemId", "name sku")
+    .populate("items.itemId", "name sku maintainStock")
 
     .sort({
       createdAt: -1,
@@ -399,7 +409,7 @@ const getPurchaseById = async ({
 
     .populate("partyId", "name phone")
 
-    .populate("items.itemId", "name sku");
+    .populate("items.itemId", "name sku maintainStock");
 };
 
 module.exports = {

@@ -1,907 +1,19 @@
-// import React, { useState, useEffect } from "react";
-// import MainLayout from "../../layouts/MainLayout";
-// import api from "../../services/api";
-// import toast from "react-hot-toast";
-// import {
-//   Plus,
-//   Trash2,
-//   Save,
-//   IndianRupee,
-//   RefreshCcw,
-//   Package,
-//   FileText,
-//   Search,
-//   ChevronDown,
-//   UserPlus,
-//   Phone,
-//   Mail,
-//   MapPin,
-//   Building2,
-//   CheckCircle2,
-//   X,
-// } from "lucide-react";
-
-// // --- PREMIUM SEARCHABLE SELECT COMPONENT ---
-// const SearchableSelect = ({
-//   options,
-//   value,
-//   onChange,
-//   placeholder,
-//   className,
-//   isItem = false,
-// }) => {
-//   const [isOpen, setIsOpen] = useState(false);
-//   const [searchTerm, setSearchTerm] = useState("");
-
-//   const selectedOption = options.find((opt) => opt.value === value);
-
-//   const filteredOptions = options.filter((opt) => {
-//     const search = searchTerm.toLowerCase();
-
-//     return (
-//       opt.label?.toLowerCase().includes(search) ||
-//       opt.phone?.toLowerCase().includes(search)
-//     );
-//   });
-
-//   return (
-//     <div className="relative w-full">
-//       {/* Trigger */}
-//       <div
-//         onClick={() => setIsOpen(!isOpen)}
-//         className={`flex items-center justify-between cursor-pointer transition-all bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 ${className} ${
-//           isOpen ? "ring-4 ring-indigo-500/10 border-indigo-200" : ""
-//         }`}
-//       >
-//         <span
-//           className={
-//             selectedOption
-//               ? "text-slate-700 font-bold text-sm"
-//               : "text-slate-400 text-sm font-medium"
-//           }
-//         >
-//           {selectedOption ? selectedOption.label : placeholder}
-//         </span>
-
-//         <ChevronDown
-//           size={16}
-//           className={`text-slate-400 transition-transform duration-200 ${
-//             isOpen ? "rotate-180" : ""
-//           }`}
-//         />
-//       </div>
-
-//       {/* Dropdown */}
-//       {isOpen && (
-//         <>
-//           <div
-//             className="fixed inset-0 z-[90]"
-//             onClick={() => setIsOpen(false)}
-//           />
-
-//           <div className="absolute z-[100] w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden top-full left-0 animate-in fade-in zoom-in duration-150">
-//             {/* Search */}
-//             <div className="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-//               <Search size={14} className="text-slate-400 ml-1" />
-
-//               <input
-//                 type="text"
-//                 autoFocus
-//                 className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700"
-//                 placeholder="Type to search..."
-//                 value={searchTerm}
-//                 onChange={(e) => setSearchTerm(e.target.value)}
-//               />
-//             </div>
-
-//             {/* Options */}
-//             <div className="max-h-60 overflow-y-auto">
-//               {filteredOptions.length > 0 ? (
-//                 filteredOptions.map((opt) => (
-//                   <div
-//                     key={opt.value}
-//                     className="px-4 py-3 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex justify-between items-center border-b border-slate-50 last:border-none"
-//                     onClick={() => {
-//                       onChange(opt.value);
-//                       setIsOpen(false);
-//                       setSearchTerm("");
-//                     }}
-//                   >
-//                     <div>
-//                       <div>
-//                         <div className="font-bold text-slate-700">
-//                           {opt.label}
-//                         </div>
-
-//                         {opt.phone && (
-//                           <div className="text-[10px] font-black text-slate-400 mt-1">
-//                             {opt.phone}
-//                           </div>
-//                         )}
-//                         {opt.bal && (
-//                           <div className="text-[10px] font-black text-slate-400 mt-1">
-//                             {opt.bal}
-//                           </div>
-//                         )}
-//                       </div>
-
-//                       {isItem && (
-//                         <div className="text-[10px] text-slate-400 font-bold">
-//                           Stock: {opt.stock || 0}
-//                         </div>
-//                       )}
-//                     </div>
-
-//                     {opt.price > 0 && (
-//                       <span className="text-[10px] font-black bg-slate-100 px-2 py-1 rounded text-slate-500">
-//                         ₹{opt.price.toLocaleString()}
-//                       </span>
-//                     )}
-//                   </div>
-//                 ))
-//               ) : (
-//                 <div className="px-4 py-6 text-xs text-slate-400 text-center italic font-semibold">
-//                   No matches found
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// const CreatePurchase = () => {
-//   const [loading, setLoading] = useState(false);
-
-//   const [syncing, setSyncing] = useState(false);
-
-//   const [parties, setParties] = useState([]);
-
-//   const [availableItems, setAvailableItems] = useState([]);
-
-//   const [generatedPurchaseNo, setGeneratedPurchaseNo] = useState("");
-
-//   const [formData, setFormData] = useState({
-//     partyId: "",
-
-//     supplierBillNo: "",
-
-//     supplierBillDate: new Date().toISOString().split("T")[0],
-
-//     purchaseDate: new Date().toISOString().split("T")[0],
-
-//     items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
-
-//     totalAmount: 0,
-
-//     paymentMode: "credit",
-
-//     paidAmount: 0,
-
-//     notes: "",
-//   });
-//   const [showAddSupplierPanel, setShowAddSupplierPanel] = useState(false);
-
-//   const [supplierForm, setSupplierForm] = useState({
-//     name: "",
-//     type: "supplier",
-//     phone: "",
-//     email: "",
-//     address: "",
-//   });
-
-//   const handleSupplierSubmit = async () => {
-//     try {
-//       const res = await api.post("/party", supplierForm);
-
-//       toast.success("Supplier Added");
-
-//       await fetchData();
-
-//       const newSupplierId = res?.data?.data?._id || res?.data?._id;
-
-//       if (newSupplierId) {
-//         setFormData((prev) => ({
-//           ...prev,
-//           partyId: newSupplierId.toString(),
-//         }));
-//       }
-
-//       setSupplierForm({
-//         name: "",
-//         type: "supplier",
-//         phone: "",
-//         email: "",
-//         address: "",
-//       });
-
-//       setShowAddSupplierPanel(false);
-//     } catch (err) {
-//       toast.error(err.response?.data?.message || "Failed to add supplier");
-//     }
-//   };
-
-//   /* FETCH */
-
-//   const fetchData = async () => {
-//     setSyncing(true);
-
-//     try {
-//       const [itemRes, partyRes] = await Promise.all([
-//         api.get("/item"),
-//         api.get("/party/filter?type=supplier"),
-//       ]);
-
-//       setAvailableItems(
-//         itemRes.data.success ? itemRes.data.data : itemRes.data || []
-//       );
-
-//       setParties(
-//         partyRes.data.success ? partyRes.data.data : partyRes.data || []
-//       );
-//     } catch (err) {
-//       toast.error("Cloud synchronization failed");
-//     } finally {
-//       setSyncing(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchData();
-//   }, []);
-
-//   const selectedParty = parties.find((p) => p._id === formData.partyId);
-
-//   const supplierOptions = parties.map((p) => ({
-//     label: p.name,
-//     value: p._id,
-//     phone: p.phone || "",
-//   }));
-
-//   const itemOptions = availableItems.map((i) => ({
-//     label: i.name,
-//     value: i._id,
-//     price: i.costPrice,
-//     stock: i.stock,
-//   }));
-
-//   /* ITEMS */
-
-//   const handleItemChange = (index, field, value) => {
-//     const newItems = [...formData.items];
-
-//     if (field === "itemId") {
-//       const selected = availableItems.find((i) => i._id === value);
-
-//       newItems[index].itemId = value;
-
-//       newItems[index].price = selected ? selected.costPrice || 0 : 0;
-//     } else {
-//       newItems[index][field] = value;
-//     }
-
-//     newItems[index].total =
-//       (parseFloat(newItems[index].quantity) || 0) *
-//       (parseFloat(newItems[index].price) || 0);
-
-//     const grandTotal = newItems.reduce(
-//       (acc, curr) => acc + (curr.total || 0),
-//       0
-//     );
-
-//     setFormData({
-//       ...formData,
-//       items: newItems,
-//       totalAmount: grandTotal,
-//       paidAmount: formData.paymentMode === "cash" ? grandTotal : 0,
-//     });
-//   };
-
-//   /* SUBMIT */
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-
-//     if (!formData.partyId) {
-//       return toast.error("Please select a supplier");
-//     }
-
-//     if (!formData.supplierBillNo) {
-//       return toast.error("Supplier bill no required");
-//     }
-
-//     setLoading(true);
-
-//     try {
-//       const res = await api.post("/purchase", formData);
-
-//       toast.success("Purchase archived successfully");
-
-//       setGeneratedPurchaseNo(res.data.data.purchaseNumber);
-
-//       setFormData({
-//         partyId: "",
-
-//         supplierBillNo: "",
-
-//         supplierBillDate: new Date().toISOString().split("T")[0],
-
-//         purchaseDate: new Date().toISOString().split("T")[0],
-
-//         items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
-
-//         totalAmount: 0,
-
-//         paymentMode: "credit",
-
-//         paidAmount: 0,
-
-//         notes: "",
-//       });
-
-//       fetchData();
-//     } catch (err) {
-//       toast.error(err.response?.data?.message || "Transaction failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <MainLayout>
-//       <div className="min-h-screen bg-[#F8FAFC] p-4 lg:p-10 font-inter text-slate-700">
-//         {/* ERP GENERATED NUMBER */}
-
-//         {generatedPurchaseNo && (
-//           <div className="max-w-7xl mx-auto mb-6 bg-emerald-50 border border-emerald-200 rounded-3xl px-6 py-5">
-//             <p className="text-[10px] uppercase tracking-widest font-black text-emerald-500">
-//               ERP Purchase Number
-//             </p>
-
-//             <h2 className="text-3xl font-black text-emerald-700 mt-1">
-//               {generatedPurchaseNo}
-//             </h2>
-//           </div>
-//         )}
-
-//         {/* HEADER */}
-
-//         <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
-//           <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-//             <Package className="text-indigo-600" size={32} />
-//             Purchase Entry
-//           </h1>
-
-//           <div className="flex items-center gap-3">
-//             <button
-//               onClick={fetchData}
-//               className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
-//             >
-//               <RefreshCcw
-//                 size={20}
-//                 className={`text-slate-500 ${syncing ? "animate-spin" : ""}`}
-//               />
-//             </button>
-
-//             <button
-//               onClick={handleSubmit}
-//               disabled={loading}
-//               className="px-10 py-3 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-2"
-//             >
-//               <Save size={18} />
-//               {loading ? "Processing..." : "Save Purchase"}
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* FORM */}
-
-//         <form className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
-//           {/* LEFT */}
-
-//           <div className="lg:col-span-8 space-y-8">
-//             {/* SUPPLIER CARD */}
-
-//             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
-//               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//                 {/* SUPPLIER */}
-
-//                 <div className="space-y-2">
-//                   <div className="flex justify-between items-end px-1 mb-1 min-h-[20px]">
-//                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-//                       Supplier Name
-//                     </label>
-
-//                     {selectedParty ? (
-//                       <span
-//                         className={`text-[10px] font-black px-2 py-0.5 rounded border shadow-sm ${
-//                           Number(selectedParty.balance || 0) > 0
-//                             ? "bg-rose-50 text-rose-600 border-rose-100"
-//                             : "bg-emerald-50 text-emerald-600 border-emerald-100"
-//                         }`}
-//                       >
-//                         {Number(selectedParty.balance || 0) > 0
-//                           ? `To Pay: ₹${Number(
-//                               selectedParty.balance
-//                             ).toLocaleString()}`
-//                           : `Advance: ₹${Math.abs(
-//                               selectedParty.balance
-//                             ).toLocaleString()}`}
-//                       </span>
-//                     ) : (
-//                       <div className="h-[17px]"></div>
-//                     )}
-//                   </div>
-
-//                   <div className="flex items-center gap-3">
-//                     <div className="flex-1">
-//                       <SearchableSelect
-//                         options={supplierOptions}
-//                         value={formData.partyId}
-//                         onChange={(val) =>
-//                           setFormData({
-//                             ...formData,
-//                             partyId: val,
-//                           })
-//                         }
-//                         placeholder="Select a Supplier..."
-//                       />
-//                     </div>
-
-//                     <button
-//                       type="button"
-//                       onClick={() => setShowAddSupplierPanel(true)}
-//                       className="h-14 w-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg transition-all flex-shrink-0"
-//                     >
-//                       <UserPlus size={18} />
-//                     </button>
-//                   </div>
-//                 </div>
-
-//                 {/* SUPPLIER BILL */}
-
-//                 <div className="space-y-2">
-//                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-//                     Supplier Bill No
-//                   </label>
-
-//                   <input
-//                     type="text"
-//                     placeholder="INV-4588"
-//                     className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-//                     value={formData.supplierBillNo}
-//                     onChange={(e) =>
-//                       setFormData({
-//                         ...formData,
-//                         supplierBillNo: e.target.value,
-//                       })
-//                     }
-//                   />
-//                 </div>
-
-//                 {/* ENTRY DATE */}
-
-//                 <div className="space-y-2">
-//                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-//                     Entry Date
-//                   </label>
-
-//                   <input
-//                     type="date"
-//                     className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-//                     value={formData.purchaseDate}
-//                     onChange={(e) =>
-//                       setFormData({
-//                         ...formData,
-//                         purchaseDate: e.target.value,
-//                       })
-//                     }
-//                   />
-//                 </div>
-
-//                 {/* SUPPLIER BILL DATE */}
-
-//                 <div className="space-y-2">
-//                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-//                     Supplier Bill Date
-//                   </label>
-
-//                   <input
-//                     type="date"
-//                     className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-//                     value={formData.supplierBillDate}
-//                     onChange={(e) =>
-//                       setFormData({
-//                         ...formData,
-//                         supplierBillDate: e.target.value,
-//                       })
-//                     }
-//                   />
-//                 </div>
-//               </div>
-//             </div>
-//             {/* ITEMS */}
-
-//             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
-//               <div className="flex items-center justify-between mb-6">
-//                 <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-//                   <FileText size={20} />
-//                   Purchase Items
-//                 </h2>
-
-//                 <button
-//                   type="button"
-//                   onClick={() =>
-//                     setFormData({
-//                       ...formData,
-//                       items: [
-//                         ...formData.items,
-//                         {
-//                           itemId: "",
-//                           quantity: 1,
-//                           price: 0,
-//                           total: 0,
-//                         },
-//                       ],
-//                     })
-//                   }
-//                   className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-sm"
-//                 >
-//                   <Plus size={16} />
-//                   Add Item
-//                 </button>
-//               </div>
-
-//               <div className="space-y-5">
-//                 {formData.items.map((item, index) => (
-//                   <div
-//                     key={index}
-//                     className="grid grid-cols-12 gap-4 bg-slate-50 border border-slate-100 rounded-3xl p-5"
-//                   >
-//                     {/* ITEM */}
-
-//                     <div className="col-span-12 lg:col-span-4">
-//                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                         Item
-//                       </label>
-
-//                       <SearchableSelect
-//                         options={itemOptions}
-//                         value={item.itemId}
-//                         isItem={true}
-//                         onChange={(val) =>
-//                           handleItemChange(index, "itemId", val)
-//                         }
-//                         placeholder="Select item..."
-//                       />
-//                     </div>
-
-//                     {/* QTY */}
-
-//                     <div className="col-span-6 lg:col-span-2">
-//                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                         Qty
-//                       </label>
-
-//                       <input
-//                         type="number"
-//                         min="1"
-//                         value={item.quantity}
-//                         onChange={(e) =>
-//                           handleItemChange(index, "quantity", e.target.value)
-//                         }
-//                         className="w-full h-14 px-4 bg-white border border-slate-200 rounded-2xl font-bold outline-none"
-//                       />
-//                     </div>
-
-//                     {/* PRICE */}
-
-//                     <div className="col-span-6 lg:col-span-2">
-//                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                         Price
-//                       </label>
-
-//                       <input
-//                         type="number"
-//                         min="0"
-//                         value={item.price}
-//                         onChange={(e) =>
-//                           handleItemChange(index, "price", e.target.value)
-//                         }
-//                         className="w-full h-14 px-4 bg-white border border-slate-200 rounded-2xl font-bold outline-none"
-//                       />
-//                     </div>
-
-//                     {/* TOTAL */}
-
-//                     <div className="col-span-10 lg:col-span-3">
-//                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                         Total
-//                       </label>
-
-//                       <div className="h-14 bg-white border border-slate-200 rounded-2xl flex items-center px-4 font-black text-slate-700">
-//                         ₹{Number(item.total || 0).toLocaleString()}
-//                       </div>
-//                     </div>
-
-//                     {/* REMOVE */}
-
-//                     <div className="col-span-2 lg:col-span-1 flex items-end">
-//                       <button
-//                         type="button"
-//                         onClick={() => {
-//                           const updated = formData.items.filter(
-//                             (_, i) => i !== index
-//                           );
-
-//                           const grandTotal = updated.reduce(
-//                             (acc, curr) => acc + curr.total,
-//                             0
-//                           );
-
-//                           setFormData({
-//                             ...formData,
-//                             items: updated,
-//                             totalAmount: grandTotal,
-//                           });
-//                         }}
-//                         className="w-full h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center"
-//                       >
-//                         <Trash2 size={18} />
-//                       </button>
-//                     </div>
-//                   </div>
-//                 ))}
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* RIGHT */}
-
-//           <div className="lg:col-span-4">
-//             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 sticky top-6">
-//               <h2 className="text-2xl font-black text-slate-900 mb-8">
-//                 Purchase Summary
-//               </h2>
-
-//               {/* TOTAL */}
-
-//               <div className="bg-indigo-50 rounded-3xl p-6 border border-indigo-100 mb-6">
-//                 <p className="text-[10px] uppercase tracking-widest font-black text-indigo-500 mb-2">
-//                   Total Purchase Value
-//                 </p>
-
-//                 <h1 className="text-5xl font-black text-indigo-700 tracking-tight flex items-center gap-1">
-//                   <IndianRupee size={38} />
-//                   {Number(formData.totalAmount || 0).toLocaleString()}
-//                 </h1>
-//               </div>
-
-//               {/* PAYMENT MODE */}
-
-//               <div className="space-y-5">
-//                 <div>
-//                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                     Payment Mode
-//                   </label>
-
-//                   <select
-//                     value={formData.paymentMode}
-//                     onChange={(e) =>
-//                       setFormData({
-//                         ...formData,
-//                         paymentMode: e.target.value,
-//                         paidAmount:
-//                           e.target.value === "cash" ? formData.totalAmount : 0,
-//                       })
-//                     }
-//                     className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none"
-//                   >
-//                     <option value="credit">Credit</option>
-
-//                     <option value="cash">Cash</option>
-//                   </select>
-//                 </div>
-
-//                 {/* PAID */}
-
-//                 <div>
-//                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-//                     Paid Amount
-//                   </label>
-
-//                   <input
-//                     type="number"
-//                     min="0"
-//                     disabled={formData.paymentMode === "cash"}
-//                     value={formData.paidAmount}
-//                     onChange={(e) =>
-//                       setFormData({
-//                         ...formData,
-//                         paidAmount: e.target.value,
-//                       })
-//                     }
-//                     className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none disabled:bg-slate-100"
-//                   />
-//                 </div>
-
-//                 {/* NOTES */}
-//               </div>
-//             </div>
-//           </div>
-//         </form>
-//       </div>
-
-//       {/* --- ADD SUPPLIER PANEL --- */}
-//       {showAddSupplierPanel && (
-//         <div className="fixed inset-0 z-50 flex justify-end">
-//           {/* BACKDROP */}
-//           <div
-//             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-//             onClick={() => setShowAddSupplierPanel(false)}
-//           />
-
-//           {/* PANEL */}
-//           <div className="relative w-full max-w-xl bg-white h-full shadow-[-20px_0_50px_rgba(0,0,0,0.1)] p-10 animate-in slide-in-from-right duration-500 flex flex-col">
-//             {/* HEADER */}
-//             <div className="flex justify-between items-center mb-12">
-//               <div className="flex items-center gap-4">
-//                 <div className="h-12 w-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
-//                   <UserPlus size={24} />
-//                 </div>
-
-//                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-//                   Add Supplier
-//                 </h2>
-//               </div>
-
-//               <button
-//                 onClick={() => setShowAddSupplierPanel(false)}
-//                 className="p-3 bg-slate-50 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all"
-//               >
-//                 <X size={24} />
-//               </button>
-//             </div>
-
-//             {/* FORM */}
-//             <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-//               {/* NAME */}
-//               <div className="space-y-2">
-//                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-//                   Supplier Name
-//                 </label>
-
-//                 <div className="relative">
-//                   <Building2
-//                     className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-//                     size={20}
-//                   />
-
-//                   <input
-//                     required
-//                     value={supplierForm.name}
-//                     onChange={(e) =>
-//                       setSupplierForm({
-//                         ...supplierForm,
-//                         name: e.target.value,
-//                       })
-//                     }
-//                     placeholder="Supplier Name"
-//                     className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* PHONE */}
-//               <div className="space-y-2">
-//                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-//                   Phone Number
-//                 </label>
-
-//                 <div className="relative">
-//                   <Phone
-//                     className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-//                     size={18}
-//                   />
-
-//                   <input
-//                     required
-//                     value={supplierForm.phone}
-//                     onChange={(e) =>
-//                       setSupplierForm({
-//                         ...supplierForm,
-//                         phone: e.target.value,
-//                       })
-//                     }
-//                     placeholder="9876543210"
-//                     className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* EMAIL */}
-//               <div className="space-y-2">
-//                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-//                   Email
-//                 </label>
-
-//                 <div className="relative">
-//                   <Mail
-//                     className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-//                     size={20}
-//                   />
-
-//                   <input
-//                     type="email"
-//                     value={supplierForm.email}
-//                     onChange={(e) =>
-//                       setSupplierForm({
-//                         ...supplierForm,
-//                         email: e.target.value,
-//                       })
-//                     }
-//                     placeholder="supplier@email.com"
-//                     className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* ADDRESS */}
-//               <div className="space-y-2">
-//                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-//                   Address
-//                 </label>
-
-//                 <div className="relative">
-//                   <MapPin
-//                     className="absolute left-5 top-5 text-slate-300"
-//                     size={20}
-//                   />
-
-//                   <textarea
-//                     rows="4"
-//                     value={supplierForm.address}
-//                     onChange={(e) =>
-//                       setSupplierForm({
-//                         ...supplierForm,
-//                         address: e.target.value,
-//                       })
-//                     }
-//                     placeholder="Supplier Address"
-//                     className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-[2rem] outline-none font-bold text-slate-700 transition-all resize-none shadow-inner"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* SAVE BUTTON */}
-//               <div className="pt-6">
-//                 <button
-//                   type="button"
-//                   onClick={handleSupplierSubmit}
-//                   className="w-full bg-slate-900 hover:bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl flex items-center justify-center gap-4 transition-all active:scale-95"
-//                 >
-//                   <CheckCircle2 size={20} />
-//                   Save Supplier
-//                 </button>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </MainLayout>
-//   );
-// };
-
-// export default CreatePurchase;
-
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useReactToPrint } from "react-to-print";
 import MainLayout from "../../layouts/MainLayout";
 import PurchaseInvoiceA4 from "../../components/print/PurchaseInvoiceA4";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import {
+  useFloating,
+  autoUpdate,
+  flip,
+  shift,
+  offset,
+  size,
+} from "@floating-ui/react";
+
 import {
   Printer,
   Plus,
@@ -932,6 +44,7 @@ const SearchableSelect = ({
   isItem = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -939,16 +52,62 @@ const SearchableSelect = ({
   const filteredOptions = options.filter((opt) => {
     const search = searchTerm.toLowerCase();
 
+    if (isItem) {
+      return (
+        (opt.label || "").toLowerCase().includes(search) ||
+        (opt.barcode || "").toLowerCase().includes(search) ||
+        (opt.sku || "").toLowerCase().includes(search) ||
+        (opt.category || "").toLowerCase().includes(search) ||
+        (opt.brand || "").toLowerCase().includes(search)
+      );
+    }
+
     return (
-      opt.label?.toLowerCase().includes(search) ||
-      opt.phone?.toLowerCase().includes(search)
+      (opt.label || "").toLowerCase().includes(search) ||
+      (opt.phone || "").toLowerCase().includes(search)
     );
   });
 
+  const { refs, floatingStyles, placement } = useFloating({
+    open: isOpen,
+
+    middleware: [
+      offset(10),
+
+      flip({
+        padding: 20,
+      }),
+
+      shift({
+        padding: 20,
+      }),
+
+      size({
+        apply({ availableHeight, elements }) {
+          Object.assign(elements.floating.style, {
+            maxHeight: `${Math.max(250, Math.min(availableHeight, 320))}px`,
+          });
+        },
+      }),
+    ],
+
+    whileElementsMounted: autoUpdate,
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      refs.reference.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [isOpen]);
+
   return (
-    <div className="relative w-full">
-      {/* Trigger */}
+    <>
+      {/* TRIGGER */}
       <div
+        ref={refs.setReference}
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between cursor-pointer transition-all bg-slate-50 border border-slate-100 rounded-2xl h-14 px-5 ${className} ${
           isOpen ? "ring-4 ring-indigo-500/10 border-indigo-200" : ""
@@ -972,87 +131,108 @@ const SearchableSelect = ({
         />
       </div>
 
-      {/* Dropdown */}
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[90]"
-            onClick={() => setIsOpen(false)}
-          />
+      {/* PORTAL DROPDOWN */}
+      {isOpen &&
+        createPortal(
+          <>
+            {/* BACKDROP */}
+            <div
+              className="fixed inset-0 z-[9998]"
+              onClick={() => setIsOpen(false)}
+            />
 
-          <div className="absolute z-[100] w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden top-full left-0 animate-in fade-in zoom-in duration-150">
-            {/* Search */}
-            <div className="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-              <Search size={14} className="text-slate-400 ml-1" />
+            {/* DROPDOWN */}
+            <div
+              ref={refs.setFloating}
+              style={floatingStyles}
+              className="w-[420px] bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden z-[9999]"
+            >
+              {/* SEARCH */}
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 p-4">
+                <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-4 h-12">
+                  <Search size={16} className="text-slate-400" />
 
-              <input
-                type="text"
-                autoFocus
-                className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700"
-                placeholder="Type to search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Type to search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-transparent outline-none text-sm font-semibold"
+                  />
+                </div>
+              </div>
 
-            {/* Options */}
-            <div className="max-h-60 overflow-y-auto">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((opt) => (
-                  <div
-                    key={opt.value}
-                    className="px-4 py-3 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex justify-between items-center border-b border-slate-50 last:border-none"
-                    onClick={() => {
-                      onChange(opt.value);
-                      setIsOpen(false);
-                      setSearchTerm("");
-                    }}
-                  >
-                    <div>
-                      <div>
-                        <div className="font-bold text-slate-700">
-                          {opt.label}
+              {/* OPTIONS */}
+              <div
+                className="overflow-y-auto min-h-[250px] max-h-[320px]"
+                style={{
+                  scrollbarWidth: "thin",
+                }}
+              >
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((opt) => (
+                    <div
+                      key={opt.value}
+                      onClick={() => {
+                        onChange(opt.value);
+
+                        setIsOpen(false);
+
+                        setSearchTerm("");
+                      }}
+                      className="px-4 py-4 cursor-pointer hover:bg-indigo-50 transition-all border-b border-slate-100"
+                    >
+                      <div className="flex justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-black text-sm text-slate-800 truncate">
+                            {opt.label}
+                          </h3>
+
+                          {isItem && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {opt.sku && (
+                                <span className="px-2 py-1 rounded-lg bg-slate-100 text-[10px] font-black">
+                                  SKU: {opt.sku}
+                                </span>
+                              )}
+
+                              {opt.brand && (
+                                <span className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black">
+                                  {opt.brand}
+                                </span>
+                              )}
+
+                              {opt.category && (
+                                <span className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black">
+                                  {opt.category}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
-                        {opt.phone && (
-                          <div className="text-[10px] font-black text-slate-400 mt-1">
-                            {opt.phone}
-                          </div>
-                        )}
-                        {opt.bal && (
-                          <div className="text-[10px] font-black text-slate-400 mt-1">
-                            {opt.bal}
+                        {opt.price > 0 && (
+                          <div className="px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-black">
+                            ₹{opt.price}
                           </div>
                         )}
                       </div>
-
-                      {isItem && (
-                        <div className="text-[10px] text-slate-400 font-bold">
-                          Stock: {opt.stock || 0}
-                        </div>
-                      )}
                     </div>
-
-                    {opt.price > 0 && (
-                      <span className="text-[10px] font-black bg-slate-100 px-2 py-1 rounded text-slate-500">
-                        ₹{opt.price.toLocaleString()}
-                      </span>
-                    )}
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-slate-400 text-sm">
+                    No matches found
                   </div>
-                ))
-              ) : (
-                <div className="px-4 py-6 text-xs text-slate-400 text-center italic font-semibold">
-                  No matches found
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          </>,
+          document.body
+        )}
+    </>
   );
 };
-
 const CreatePurchase = () => {
   const [loading, setLoading] = useState(false);
 
@@ -1164,12 +344,20 @@ const CreatePurchase = () => {
     phone: p.phone || "",
   }));
 
-  const itemOptions = availableItems.map((i) => ({
-    label: i.name,
-    value: i._id,
-    price: i.costPrice,
-    stock: i.stock,
-  }));
+  const itemOptions = availableItems
+    .filter((i) => i.maintainStock)
+    .map((i) => ({
+      label: i.name,
+      value: i._id,
+
+      price: i.costPrice,
+      stock: i.stock,
+
+      barcode: i.barcode,
+      sku: i.sku,
+      category: i.category,
+      brand: i.brand,
+    }));
 
   /* ITEMS */
 
@@ -1177,7 +365,9 @@ const CreatePurchase = () => {
     const newItems = [...formData.items];
 
     if (field === "itemId") {
-      const selected = availableItems.find((i) => i._id === value);
+      const selected = availableItems.find(
+        (i) => i._id === value && i.maintainStock
+      );
 
       newItems[index].itemId = value;
 
@@ -1190,10 +380,9 @@ const CreatePurchase = () => {
       (parseFloat(newItems[index].quantity) || 0) *
       (parseFloat(newItems[index].price) || 0);
 
-    const grandTotal = newItems.reduce(
-      (acc, curr) => acc + (curr.total || 0),
-      0
-    );
+    const grandTotal = newItems
+      .filter((i) => i.itemId)
+      .reduce((acc, curr) => acc + (curr.total || 0), 0);
 
     setFormData({
       ...formData,
@@ -1202,639 +391,749 @@ const CreatePurchase = () => {
       paidAmount: formData.paymentMode === "cash" ? grandTotal : 0,
     });
   };
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
+ const handlePrint = useReactToPrint({
+  contentRef: printRef,
 
-    documentTitle: "Purchase Invoice",
-  });
+  documentTitle: "Purchase Invoice",
+
+  removeAfterPrint: true,
+});
 
   /* SUBMIT */
 
-  const handleSubmit = async (e, printAfterSave = false) => {
-    e.preventDefault();
+  /* ========================================================= */
+  /* SUBMIT */
+  /* ========================================================= */
 
-    if (!formData.partyId) {
-      return toast.error("Please select a supplier");
-    }
+  const handleSubmit = async (
+  e,
+  printAfterSave = false
+) => {
 
-    if (!formData.supplierBillNo) {
-      return toast.error("Supplier bill no required");
-    }
+  e.preventDefault();
+
+  /* ====================================== */
+  /* VALIDATION */
+  /* ====================================== */
+
+  if (!formData.partyId) {
+    return toast.error(
+      "Please select supplier"
+    );
+  }
+
+  if (!formData.supplierBillNo) {
+    return toast.error(
+      "Supplier bill no required"
+    );
+  }
+
+  /* ====================================== */
+  /* CLEAN EMPTY AUTO ROWS */
+  /* ====================================== */
+
+  const cleanedItems = formData.items
+    .filter(
+      (item) =>
+        item.itemId &&
+        String(item.itemId).trim() !== ""
+    )
+    .map((item) => ({
+      itemId: item.itemId,
+
+      quantity:
+        Number(item.quantity) || 1,
+
+      price:
+        Number(item.price) || 0,
+
+      total:
+        (Number(item.quantity) || 0) *
+        (Number(item.price) || 0),
+    }));
+
+  /* ====================================== */
+  /* NO ITEMS */
+  /* ====================================== */
+
+  if (cleanedItems.length === 0) {
+    return toast.error(
+      "Please add at least one item"
+    );
+  }
+
+  /* ====================================== */
+  /* FINAL TOTAL */
+  /* ====================================== */
+
+  const finalTotal = cleanedItems.reduce(
+    (acc, curr) => acc + curr.total,
+    0
+  );
+
+  /* ====================================== */
+  /* FINAL PAYLOAD */
+  /* ====================================== */
+
+  const payload = {
+    ...formData,
+
+    items: cleanedItems,
+
+    totalAmount: finalTotal,
+
+    paidAmount:
+      formData.paymentMode === "cash"
+        ? finalTotal
+        : Number(formData.paidAmount) || 0,
+  };
+
+  try {
 
     setLoading(true);
 
-    try {
-      const res = await api.post("/purchase", formData);
+    /* ====================================== */
+    /* SAVE PURCHASE */
+    /* ====================================== */
 
-      toast.success("Purchase archived successfully");
+    const res = await api.post(
+      "/purchase",
+      payload
+    );
 
-      const createdId = res?.data?.data?._id;
+    toast.success(
+      "Purchase saved successfully"
+    );
 
-      if (createdId && printAfterSave) {
-        const detailRes = await api.get(`/purchase/${createdId}`);
+    /* ====================================== */
+    /* GENERATED NUMBER */
+    /* ====================================== */
 
-        const fullPurchase = detailRes.data.data;
+    setGeneratedPurchaseNo(
+      res?.data?.data?.purchaseNumber || ""
+    );
 
-        setCreatedPurchase(fullPurchase);
+    const purchaseId =
+      res?.data?.data?._id;
 
-        setTimeout(() => {
-          if (printRef.current) {
-            handlePrint();
-          }
-        }, 800);
-      }
-      setGeneratedPurchaseNo(res.data.data.purchaseNumber);
+    /* ====================================== */
+    /* SAVE & PRINT FLOW */
+    /* ====================================== */
 
-      setFormData({
-        partyId: "",
+    if (printAfterSave && purchaseId) {
 
-        supplierBillNo: "",
+  try {
 
-        supplierBillDate: new Date().toISOString().split("T")[0],
+    const detailRes = await api.get(
+      `/purchase/${purchaseId}`
+    );
 
-        purchaseDate: new Date().toISOString().split("T")[0],
+    const purchaseData =
+      detailRes?.data?.data;
 
-        items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
+    setCreatedPurchase(purchaseData);
 
-        totalAmount: 0,
+    setTimeout(() => {
 
-        paymentMode: "credit",
+      handlePrint();
 
-        paidAmount: 0,
+    }, 1000);
 
-        notes: "",
-      });
+  } catch (printErr) {
 
-      fetchData();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Transaction failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.error(printErr);
+
+    toast.error(
+      "Print preparation failed"
+    );
+  }
+}
+
+    /* ====================================== */
+    /* RESET FORM */
+    /* ====================================== */
+
+    setTimeout(
+      () => {
+
+        setFormData({
+          partyId: "",
+
+          supplierBillNo: "",
+
+          supplierBillDate:
+            new Date()
+              .toISOString()
+              .split("T")[0],
+
+          purchaseDate:
+            new Date()
+              .toISOString()
+              .split("T")[0],
+
+          items: [
+            {
+              itemId: "",
+              quantity: 1,
+              price: 0,
+              total: 0,
+            },
+          ],
+
+          totalAmount: 0,
+
+          paymentMode: "credit",
+
+          paidAmount: 0,
+
+          notes: "",
+        });
+
+      },
+      printAfterSave ? 1600 : 100
+    );
+
+    /* ====================================== */
+    /* REFRESH */
+    /* ====================================== */
+
+    fetchData();
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast.error(
+      err?.response?.data?.message ||
+      "Failed to save purchase"
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+
+  {
+    /* ========================================================= */
+  }
+  {
+    /* ENTERPRISE PURCHASE ENTRY LAYOUT - REWRITTEN ARCHITECTURE */
+  }
+  {
+    /* ========================================================= */
+  }
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-[#F8FAFC] p-4 lg:p-10 font-inter text-slate-700">
-        {/* ERP GENERATED NUMBER */}
+      {/* ========================================================= */}
+      {/* PAGE ROOT */}
+      {/* ========================================================= */}
+      <div className="min-h-screen bg-[#F6F8FC]">
+        {/* ========================================================= */}
+        {/* FIXED ERP HEADER */}
+        {/* ========================================================= */}
+        <div className="fixed top-[72px] left-0 lg:left-[280px] right-0 z-40 bg-[#F6F8FC]/95 backdrop-blur-xl border-b border-slate-200">
+          <div className="px-4 md:px-6 xl:px-8 h-[92px] flex items-center justify-between gap-6">
+            {/* LEFT */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
 
-        {generatedPurchaseNo && (
-          <div className="max-w-7xl mx-auto mb-6 bg-emerald-50 border border-emerald-200 rounded-3xl px-6 py-5">
-            <p className="text-[10px] uppercase tracking-widest font-black text-emerald-500">
-              ERP Purchase Number
-            </p>
+                <span className="uppercase tracking-[0.35em] text-[10px] font-black text-indigo-600">
+                  Purchase / Entry
+                </span>
+              </div>
 
-            <h2 className="text-3xl font-black text-emerald-700 mt-1">
-              {generatedPurchaseNo}
-            </h2>
-          </div>
-        )}
+              <h1 className="text-[30px] xl:text-[34px] leading-none font-black tracking-tight text-slate-900">
+                Create Purchase Entry
+              </h1>
+            </div>
 
-        {/* HEADER */}
+            {/* ACTIONS */}
+            <div className="flex items-center gap-3 shrink-0">
+              {/* REFRESH */}
+              <button
+                onClick={fetchData}
+                className="h-11 w-11 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-all"
+              >
+                <RefreshCcw
+                  size={17}
+                  className={`text-slate-500 ${syncing ? "animate-spin" : ""}`}
+                />
+              </button>
 
-        <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Package className="text-indigo-600" size={32} />
-            Purchase Entry
-          </h1>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchData}
-              className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <RefreshCcw
-                size={20}
-                className={`text-slate-500 ${syncing ? "animate-spin" : ""}`}
-              />
-            </button>
-
-            <div className="flex items-center gap-3">
+              {/* PRINT */}
               <button
                 type="button"
                 onClick={(e) => handleSubmit(e, true)}
-                disabled={loading}
-                className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all flex items-center gap-2"
+                className="h-11 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black flex items-center gap-2 shadow-sm transition-all"
               >
-                <Printer size={18} />
+                <Printer size={16} />
                 Save & Print
               </button>
 
+              {/* SAVE */}
               <button
+                type="button"
                 onClick={(e) => handleSubmit(e, false)}
-                disabled={loading}
-                className="px-10 py-3 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all flex items-center gap-2"
+                className="h-11 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black flex items-center gap-2 shadow-sm transition-all"
               >
-                <Save size={18} />
-
-                {loading ? "Processing..." : "Save Purchase"}
+                <Save size={16} />
+                Save Purchase
               </button>
             </div>
           </div>
         </div>
 
-        {/* FORM */}
+        {/* ========================================================= */}
+        {/* MAIN CONTENT */}
+        {/* ========================================================= */}
+        <div className="px-4 md:px-6 xl:px-8 pt-[190px] pb-10">
+          {/* ========================================================= */}
+          {/* CONTENT GRID */}
+          {/* ========================================================= */}
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+            {/* ========================================================= */}
+            {/* LEFT SECTION */}
+            {/* ========================================================= */}
+            <div className="min-w-0 space-y-6">
+              {/* ========================================================= */}
+              {/* SUPPLIER CARD */}
+              {/* ========================================================= */}
+              <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-visible">
+                {/* HEADER */}
+                <div className="h-[78px] px-6 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-[24px] font-black text-slate-900">
+                      Supplier Details
+                    </h2>
 
-        <form className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* LEFT */}
-
-          <div className="lg:col-span-8 space-y-8">
-            {/* SUPPLIER CARD */}
-
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* SUPPLIER */}
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-end px-1 mb-1 min-h-[20px]">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Supplier Name
-                    </label>
-
-                    {selectedParty ? (
-                      <span
-                        className={`text-[10px] font-black px-2 py-0.5 rounded border shadow-sm ${
-                          Number(selectedParty.balance || 0) > 0
-                            ? "bg-rose-50 text-rose-600 border-rose-100"
-                            : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                        }`}
-                      >
-                        {Number(selectedParty.balance || 0) > 0
-                          ? `To Pay: ₹${Number(
-                              selectedParty.balance
-                            ).toLocaleString()}`
-                          : `Advance: ₹${Math.abs(
-                              selectedParty.balance
-                            ).toLocaleString()}`}
-                      </span>
-                    ) : (
-                      <div className="h-[17px]"></div>
-                    )}
+                    <p className="text-sm text-slate-400 font-semibold mt-1">
+                      Supplier invoice & billing information
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <SearchableSelect
-                        options={supplierOptions}
-                        value={formData.partyId}
-                        onChange={(val) =>
+                  <div className="h-11 w-11 rounded-xl bg-indigo-50 flex items-center justify-center">
+                    <Building2 size={18} className="text-indigo-600" />
+                  </div>
+                </div>
+
+                {/* BODY */}
+                <div className="p-6 space-y-5">
+                  {/* ROW 1 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* SUPPLIER */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Name
+                      </label>
+
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <SearchableSelect
+                            options={supplierOptions}
+                            value={formData.partyId}
+                            onChange={(val) =>
+                              setFormData({
+                                ...formData,
+                                partyId: val,
+                              })
+                            }
+                            placeholder="Search supplier..."
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowAddSupplierPanel(true)}
+                          className="h-14 w-14 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-sm transition-all shrink-0"
+                        >
+                          <UserPlus size={18} />
+                        </button>
+                      </div>
+
+                      {/* CONTACT */}
+                      {selectedParty && (
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {selectedParty.phone && (
+                            <div className="h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2">
+                              <Phone size={14} className="text-indigo-600" />
+
+                              <span className="text-sm font-bold text-slate-700">
+                                {selectedParty.phone}
+                              </span>
+                            </div>
+                          )}
+
+                          {selectedParty.email && (
+                            <div className="h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2">
+                              <Mail size={14} className="text-violet-600" />
+
+                              <span className="text-sm font-bold text-slate-700">
+                                {selectedParty.email}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* BILL NO */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Bill No
+                      </label>
+
+                      <input
+                        type="text"
+                        value={formData.supplierBillNo}
+                        onChange={(e) =>
                           setFormData({
                             ...formData,
-                            partyId: val,
+                            supplierBillNo: e.target.value,
                           })
                         }
-                        placeholder="Select a Supplier..."
+                        placeholder="INV-10293"
+                        className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ROW 2 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* PURCHASE DATE */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Purchase Date
+                      </label>
+
+                      <input
+                        type="date"
+                        value={formData.purchaseDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            purchaseDate: e.target.value,
+                          })
+                        }
+                        className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowAddSupplierPanel(true)}
-                      className="h-14 w-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-lg transition-all flex-shrink-0"
-                    >
-                      <UserPlus size={18} />
-                    </button>
+                    {/* BILL DATE */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Bill Date
+                      </label>
+
+                      <input
+                        type="date"
+                        value={formData.supplierBillDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            supplierBillDate: e.target.value,
+                          })
+                        }
+                        className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ========================================================= */}
+              {/* PURCHASE ITEMS */}
+              {/* ========================================================= */}
+              <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-visible">
+                {/* HEADER */}
+                <div className="h-[78px] px-6 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-[24px] font-black text-slate-900">
+                      Purchase Items
+                    </h2>
+
+                    <p className="text-sm text-slate-400 font-semibold mt-1">
+                      Add inventory products into invoice
+                    </p>
+                  </div>
+
+                  <div className="h-11 px-4 rounded-xl bg-indigo-50 flex items-center gap-2">
+                    <Package size={16} className="text-indigo-600" />
+
+                    <span className="font-black text-sm text-indigo-700">
+                      {formData.items.filter((i) => i.itemId).length} Items
+                    </span>
                   </div>
                 </div>
 
-                {/* SUPPLIER BILL */}
+                {/* BODY */}
+                <div className="p-5 space-y-4">
+                  {formData.items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 transition-all hover:border-indigo-200 hover:bg-white"
+                    >
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                        {/* PRODUCT */}
+                        <div className="lg:col-span-6">
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Product
+                          </label>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Supplier Bill No
-                  </label>
+                          <SearchableSelect
+                            options={itemOptions}
+                            value={item.itemId}
+                            isItem={true}
+                            onChange={(val) => {
+                              handleItemChange(index, "itemId", val);
 
-                  <input
-                    type="text"
-                    placeholder="INV-4588"
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-                    value={formData.supplierBillNo}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        supplierBillNo: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+                              const isLastRow =
+                                index === formData.items.length - 1;
 
-                {/* ENTRY DATE */}
+                              if (isLastRow && val) {
+                                setTimeout(() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Entry Date
-                  </label>
+                                    items: [
+                                      ...prev.items,
 
-                  <input
-                    type="date"
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-                    value={formData.purchaseDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        purchaseDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+                                      {
+                                        itemId: "",
+                                        quantity: 1,
+                                        price: 0,
+                                        total: 0,
+                                      },
+                                    ],
+                                  }));
+                                }, 100);
+                              }
+                            }}
+                            placeholder="Search product..."
+                          />
+                        </div>
 
-                {/* SUPPLIER BILL DATE */}
+                        {/* QTY */}
+                        <div className="lg:col-span-2">
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Qty
+                          </label>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Supplier Bill Date
-                  </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleItemChange(
+                                index,
+                                "quantity",
+                                e.target.value
+                              )
+                            }
+                            className="w-full h-14 rounded-xl border border-slate-200 bg-white px-4 text-center font-black outline-none"
+                          />
+                        </div>
 
-                  <input
-                    type="date"
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-slate-700"
-                    value={formData.supplierBillDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        supplierBillDate: e.target.value,
-                      })
-                    }
-                  />
+                        {/* PRICE */}
+                        <div className="lg:col-span-2">
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Price
+                          </label>
+
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">
+                              ₹
+                            </span>
+
+                            <input
+                              type="number"
+                              value={item.price}
+                              onChange={(e) =>
+                                handleItemChange(index, "price", e.target.value)
+                              }
+                              className="w-full h-14 rounded-xl border border-slate-200 bg-white pl-10 pr-4 font-black outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* TOTAL */}
+                        <div className="lg:col-span-1">
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Total
+                          </label>
+
+                          <div className="h-14 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black">
+                            ₹{item.total || 0}
+                          </div>
+                        </div>
+
+                        {/* DELETE */}
+                        <div className="lg:col-span-1">
+                          <button
+                            type="button"
+                            className="w-full h-14 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-            {/* ITEMS */}
 
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                  <FileText size={20} />
-                  Purchase Items
-                </h2>
+            {/* ========================================================= */}
+            {/* SUMMARY RAIL */}
+            {/* ========================================================= */}
+            <div className="hidden xl:block">
+              <div className="sticky top-[180px]">
+                <div className="rounded-[28px] overflow-hidden border border-indigo-100 bg-white shadow-[0_20px_60px_rgba(99,102,241,0.10)]">
+                  {/* TOP */}
+                  <div className="bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 p-6 text-white">
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <p className="uppercase tracking-[0.3em] text-[10px] font-black text-indigo-200 mb-2">
+                          Purchase Summary
+                        </p>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({
-                      ...formData,
-                      items: [
-                        ...formData.items,
-                        {
-                          itemId: "",
-                          quantity: 1,
-                          price: 0,
-                          total: 0,
-                        },
-                      ],
-                    })
-                  }
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-sm"
-                >
-                  <Plus size={16} />
-                  Add Item
-                </button>
-              </div>
+                        <h2 className="text-[28px] font-black">Total Amount</h2>
+                      </div>
 
-              <div className="space-y-5">
-                {formData.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-12 gap-4 bg-slate-50 border border-slate-100 rounded-3xl p-5"
-                  >
-                    {/* ITEM */}
-
-                    <div className="col-span-12 lg:col-span-4">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                        Item
-                      </label>
-
-                      <SearchableSelect
-                        options={itemOptions}
-                        value={item.itemId}
-                        isItem={true}
-                        onChange={(val) =>
-                          handleItemChange(index, "itemId", val)
-                        }
-                        placeholder="Select item..."
-                      />
-                    </div>
-
-                    {/* QTY */}
-
-                    <div className="col-span-6 lg:col-span-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                        Qty
-                      </label>
-
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleItemChange(index, "quantity", e.target.value)
-                        }
-                        className="w-full h-14 px-4 bg-white border border-slate-200 rounded-2xl font-bold outline-none"
-                      />
-                    </div>
-
-                    {/* PRICE */}
-
-                    <div className="col-span-6 lg:col-span-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                        Price
-                      </label>
-
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.price}
-                        onChange={(e) =>
-                          handleItemChange(index, "price", e.target.value)
-                        }
-                        className="w-full h-14 px-4 bg-white border border-slate-200 rounded-2xl font-bold outline-none"
-                      />
-                    </div>
-
-                    {/* TOTAL */}
-
-                    <div className="col-span-10 lg:col-span-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                        Total
-                      </label>
-
-                      <div className="h-14 bg-white border border-slate-200 rounded-2xl flex items-center px-4 font-black text-slate-700">
-                        ₹{Number(item.total || 0).toLocaleString()}
+                      <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <IndianRupee size={24} />
                       </div>
                     </div>
 
-                    {/* REMOVE */}
+                    <h1 className="text-5xl font-black tracking-tight leading-none">
+                      ₹{formData.totalAmount || 0}
+                    </h1>
 
-                    <div className="col-span-2 lg:col-span-1 flex items-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = formData.items.filter(
-                            (_, i) => i !== index
-                          );
+                    <p className="mt-3 text-sm text-indigo-100 font-medium">
+                      Live purchase invoice total
+                    </p>
+                  </div>
 
-                          const grandTotal = updated.reduce(
-                            (acc, curr) => acc + curr.total,
-                            0
-                          );
+                  {/* BODY */}
+                  <div className="p-5 space-y-5">
+                    {/* PAYMENT */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Payment Mode
+                      </label>
 
-                          setFormData({
-                            ...formData,
-                            items: updated,
-                            totalAmount: grandTotal,
-                          });
-                        }}
-                        className="w-full h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              paymentMode: "credit",
+                              paidAmount: 0,
+                            })
+                          }
+                          className={`h-13 rounded-xl font-black transition-all ${
+                            formData.paymentMode === "credit"
+                              ? "bg-indigo-600 text-white shadow-lg"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          Credit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              paymentMode: "cash",
+                              paidAmount: formData.totalAmount,
+                            })
+                          }
+                          className={`h-13 rounded-xl font-black transition-all ${
+                            formData.paymentMode === "cash"
+                              ? "bg-emerald-600 text-white shadow-lg"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          Cash
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* PAID */}
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Paid Amount
+                      </label>
+
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">
+                          ₹
+                        </span>
+
+                        <input
+                          type="number"
+                          disabled={formData.paymentMode === "cash"}
+                          value={formData.paidAmount}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              paidAmount: e.target.value,
+                            })
+                          }
+                          className="w-full h-14 rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-black outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* SUMMARY */}
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">
+                          Items
+                        </span>
+
+                        <span className="font-black">
+                          {formData.items.length}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">
+                          Payment
+                        </span>
+
+                        <span className="font-black capitalize">
+                          {formData.paymentMode}
+                        </span>
+                      </div>
+
+                      <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">
+                          Grand Total
+                        </span>
+
+                        <span className="text-2xl font-black text-indigo-700">
+                          ₹{formData.totalAmount || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT */}
-
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 sticky top-6">
-              <h2 className="text-2xl font-black text-slate-900 mb-8">
-                Purchase Summary
-              </h2>
-
-              {/* TOTAL */}
-
-              <div className="bg-indigo-50 rounded-3xl p-6 border border-indigo-100 mb-6">
-                <p className="text-[10px] uppercase tracking-widest font-black text-indigo-500 mb-2">
-                  Total Purchase Value
-                </p>
-
-                <h1 className="text-5xl font-black text-indigo-700 tracking-tight flex items-center gap-1">
-                  <IndianRupee size={38} />
-                  {Number(formData.totalAmount || 0).toLocaleString()}
-                </h1>
-              </div>
-
-              {/* PAYMENT MODE */}
-
-              <div className="space-y-5">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                    Payment Mode
-                  </label>
-
-                  <select
-                    value={formData.paymentMode}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        paymentMode: e.target.value,
-                        paidAmount:
-                          e.target.value === "cash" ? formData.totalAmount : 0,
-                      })
-                    }
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none"
-                  >
-                    <option value="credit">Credit</option>
-
-                    <option value="cash">Cash</option>
-                  </select>
                 </div>
-
-                {/* PAID */}
-
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">
-                    Paid Amount
-                  </label>
-
-                  <input
-                    type="number"
-                    min="0"
-                    disabled={formData.paymentMode === "cash"}
-                    value={formData.paidAmount}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        paidAmount: e.target.value,
-                      })
-                    }
-                    className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none disabled:bg-slate-100"
-                  />
-                </div>
-
-                {/* NOTES */}
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* --- ADD SUPPLIER PANEL --- */}
-      {showAddSupplierPanel && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* BACKDROP */}
-          <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setShowAddSupplierPanel(false)}
-          />
-
-          {/* PANEL */}
-          <div className="relative w-full max-w-xl bg-white h-full shadow-[-20px_0_50px_rgba(0,0,0,0.1)] p-10 animate-in slide-in-from-right duration-500 flex flex-col">
-            {/* HEADER */}
-            <div className="flex justify-between items-center mb-12">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
-                  <UserPlus size={24} />
-                </div>
-
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-                  Add Supplier
-                </h2>
-              </div>
-
-              <button
-                onClick={() => setShowAddSupplierPanel(false)}
-                className="p-3 bg-slate-50 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* FORM */}
-            <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {/* NAME */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Supplier Name
-                </label>
-
-                <div className="relative">
-                  <Building2
-                    className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-                    size={20}
-                  />
-
-                  <input
-                    required
-                    value={supplierForm.name}
-                    onChange={(e) =>
-                      setSupplierForm({
-                        ...supplierForm,
-                        name: e.target.value,
-                      })
-                    }
-                    placeholder="Supplier Name"
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* PHONE */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Phone Number
-                </label>
-
-                <div className="relative">
-                  <Phone
-                    className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-                    size={18}
-                  />
-
-                  <input
-                    required
-                    value={supplierForm.phone}
-                    onChange={(e) =>
-                      setSupplierForm({
-                        ...supplierForm,
-                        phone: e.target.value,
-                      })
-                    }
-                    placeholder="9876543210"
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* EMAIL */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Email
-                </label>
-
-                <div className="relative">
-                  <Mail
-                    className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"
-                    size={20}
-                  />
-
-                  <input
-                    type="email"
-                    value={supplierForm.email}
-                    onChange={(e) =>
-                      setSupplierForm({
-                        ...supplierForm,
-                        email: e.target.value,
-                      })
-                    }
-                    placeholder="supplier@email.com"
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* ADDRESS */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Address
-                </label>
-
-                <div className="relative">
-                  <MapPin
-                    className="absolute left-5 top-5 text-slate-300"
-                    size={20}
-                  />
-
-                  <textarea
-                    rows="4"
-                    value={supplierForm.address}
-                    onChange={(e) =>
-                      setSupplierForm({
-                        ...supplierForm,
-                        address: e.target.value,
-                      })
-                    }
-                    placeholder="Supplier Address"
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-[2rem] outline-none font-bold text-slate-700 transition-all resize-none shadow-inner"
-                  />
-                </div>
-              </div>
-
-              {/* SAVE BUTTON */}
-              <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={handleSupplierSubmit}
-                  className="w-full bg-slate-900 hover:bg-indigo-600 text-white py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl flex items-center justify-center gap-4 transition-all active:scale-95"
-                >
-                  <CheckCircle2 size={20} />
-                  Save Supplier
-                </button>
               </div>
             </div>
           </div>
         </div>
-      )}
-      <div
-        style={{
-          position: "absolute",
-          left: "-9999px",
-          top: 0,
-        }}
-      >
-        <PurchaseInvoiceA4 ref={printRef} purchase={createdPurchase} />
+      </div>
+      {/* PRINT AREA */}
+      <div className="hidden">
+        <div ref={printRef}>
+          {createdPurchase && <PurchaseInvoiceA4 purchase={createdPurchase} />}
+        </div>
       </div>
     </MainLayout>
   );
