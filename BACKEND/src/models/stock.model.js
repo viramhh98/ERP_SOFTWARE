@@ -19,7 +19,7 @@ const stockSchema = new mongoose.Schema(
       required: true,
     },
 
-    quantity: { type: Number, default: 0 ,min : 0},
+    quantity: { type: Number, default: 0},
   },
   { timestamps: true }
 );

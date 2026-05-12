@@ -42,7 +42,6 @@ const Item = require("../models/item.model");
 
 const createItem = async (data) => {
   try {
-    // normalize SKU
     const sku = data.sku.toUpperCase().trim();
 
     const existing = await Item.findOne({

@@ -162,10 +162,7 @@ const createPurchase = async (data) => {
     /* TOTAL */
     /* -------------------------------------------- */
 
-    const totalAmount = items.reduce(
-      (acc, item) => acc + item.total,
-      0
-    );
+    const totalAmount = items.reduce((acc, item) => acc + item.total, 0);
 
     const paidAmount = Number(data.paidAmount || 0);
 
@@ -233,45 +230,44 @@ const createPurchase = async (data) => {
     /* -------------------------------------------- */
 
     for (const item of items) {
-
       // fetch actual item
       const dbItem = await Item.findById(item.itemId);
 
-      // maintain stock only if enabled
-      if (dbItem?.maintainStock) {
+      if (!dbItem) {
+        throw new Error("Item not found");
+      }
 
-        await stockService.increaseStock({
+      await stockService.increaseStock({
+        itemId: item.itemId,
+
+        companyId: data.companyId,
+
+        branchId: data.branchId,
+
+        quantity: item.quantity,
+
+        session,
+      });
+
+      await stockTransactionService.createStockTransaction(
+        {
           itemId: item.itemId,
 
           companyId: data.companyId,
 
           branchId: data.branchId,
 
+          type: "IN",
+
           quantity: item.quantity,
 
-          session,
-        });
+          referenceType: "PURCHASE",
 
-        await stockTransactionService.createStockTransaction(
-          {
-            itemId: item.itemId,
+          referenceId: purchaseDoc._id,
+        },
 
-            companyId: data.companyId,
-
-            branchId: data.branchId,
-
-            type: "IN",
-
-            quantity: item.quantity,
-
-            referenceType: "PURCHASE",
-
-            referenceId: purchaseDoc._id,
-          },
-
-          session
-        );
-      }
+        session
+      );
     }
 
     /* -------------------------------------------- */
@@ -357,9 +353,7 @@ const createPurchase = async (data) => {
     session.endSession();
 
     return purchaseDoc;
-
   } catch (error) {
-
     await session.abortTransaction();
 
     session.endSession();

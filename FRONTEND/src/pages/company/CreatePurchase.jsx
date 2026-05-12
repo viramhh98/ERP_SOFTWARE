@@ -1141,33 +1141,6 @@
 
 // export default CreatePurchase;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useReactToPrint } from "react-to-print";
@@ -1448,8 +1421,13 @@ const CreatePurchase = () => {
         api.get("/item"),
         api.get("/party/filter?type=supplier"),
       ]);
-      setAvailableItems(itemRes.data.success ? itemRes.data.data : itemRes.data || []);
-      setParties(partyRes.data.success ? partyRes.data.data : partyRes.data || []);
+      console.log("Fetched Items:", itemRes.data);
+      setAvailableItems(
+        itemRes.data.success ? itemRes.data.data : itemRes.data || []
+      );
+      setParties(
+        partyRes.data.success ? partyRes.data.data : partyRes.data || []
+      );
     } catch (err) {
       toast.error("Cloud synchronization failed");
     } finally {
@@ -1470,16 +1448,25 @@ const CreatePurchase = () => {
   }));
 
   const itemOptions = availableItems
-    .filter((i) => i.maintainStock)
+    .filter((i) => i.isActive)
     .map((i) => ({
       label: i.name,
+
       value: i._id,
+
       price: i.costPrice,
+
       stock: i.stock,
+
       barcode: i.barcode,
+
       sku: i.sku,
+
       category: i.category,
+
       brand: i.brand,
+
+      maintainStock: i.maintainStock,
     }));
 
   const handleItemChange = (index, field, value) => {
@@ -1505,7 +1492,8 @@ const CreatePurchase = () => {
       ...formData,
       items: newItems,
       totalAmount: grandTotal,
-      paidAmount: formData.paymentMode === "cash" ? grandTotal : formData.paidAmount,
+      paidAmount:
+        formData.paymentMode === "cash" ? grandTotal : formData.paidAmount,
     });
   };
 
@@ -1522,7 +1510,8 @@ const CreatePurchase = () => {
       ...formData,
       items: newItems,
       totalAmount: grandTotal,
-      paidAmount: formData.paymentMode === "cash" ? grandTotal : formData.paidAmount,
+      paidAmount:
+        formData.paymentMode === "cash" ? grandTotal : formData.paidAmount,
     });
   };
 
@@ -1535,7 +1524,8 @@ const CreatePurchase = () => {
     e.preventDefault();
 
     if (!formData.partyId) return toast.error("Please select supplier");
-    if (!formData.supplierBillNo) return toast.error("Supplier bill no required");
+    if (!formData.supplierBillNo)
+      return toast.error("Supplier bill no required");
 
     const cleanedItems = formData.items
       .filter((item) => item.itemId && String(item.itemId).trim() !== "")
@@ -1546,7 +1536,8 @@ const CreatePurchase = () => {
         total: (Number(item.quantity) || 0) * (Number(item.price) || 0),
       }));
 
-    if (cleanedItems.length === 0) return toast.error("Please add at least one item");
+    if (cleanedItems.length === 0)
+      return toast.error("Please add at least one item");
 
     const finalTotal = cleanedItems.reduce((acc, curr) => acc + curr.total, 0);
 
@@ -1580,22 +1571,24 @@ const CreatePurchase = () => {
         }
       }
 
-      setTimeout(() => {
-        setFormData({
-          partyId: "",
-          supplierBillNo: "",
-          supplierBillDate: new Date().toISOString().split("T")[0],
-          purchaseDate: new Date().toISOString().split("T")[0],
-          items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
-          totalAmount: 0,
-          paymentMode: "credit",
-          paidAmount: 0,
-          notes: "",
-        });
-        setCreatedPurchase(null);
-        fetchData();
-      }, printAfterSave ? 1600 : 100);
-
+      setTimeout(
+        () => {
+          setFormData({
+            partyId: "",
+            supplierBillNo: "",
+            supplierBillDate: new Date().toISOString().split("T")[0],
+            purchaseDate: new Date().toISOString().split("T")[0],
+            items: [{ itemId: "", quantity: 1, price: 0, total: 0 }],
+            totalAmount: 0,
+            paymentMode: "credit",
+            paidAmount: 0,
+            notes: "",
+          });
+          setCreatedPurchase(null);
+          fetchData();
+        },
+        printAfterSave ? 1600 : 100
+      );
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save purchase");
     } finally {
@@ -1626,7 +1619,10 @@ const CreatePurchase = () => {
                 onClick={fetchData}
                 className="h-11 w-11 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-all"
               >
-                <RefreshCcw size={17} className={`text-slate-500 ${syncing ? "animate-spin" : ""}`} />
+                <RefreshCcw
+                  size={17}
+                  className={`text-slate-500 ${syncing ? "animate-spin" : ""}`}
+                />
               </button>
               <button
                 type="button"
@@ -1656,8 +1652,12 @@ const CreatePurchase = () => {
               <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-visible">
                 <div className="h-[78px] px-6 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-[24px] font-black text-slate-900">Supplier Details</h2>
-                    <p className="text-sm text-slate-400 font-semibold mt-1">Supplier invoice & billing information</p>
+                    <h2 className="text-[24px] font-black text-slate-900">
+                      Supplier Details
+                    </h2>
+                    <p className="text-sm text-slate-400 font-semibold mt-1">
+                      Supplier invoice & billing information
+                    </p>
                   </div>
                   <div className="h-11 w-11 rounded-xl bg-indigo-50 flex items-center justify-center">
                     <Building2 size={18} className="text-indigo-600" />
@@ -1667,13 +1667,17 @@ const CreatePurchase = () => {
                 <div className="p-6 space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Supplier Name</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Name
+                      </label>
                       <div className="flex gap-3">
                         <div className="flex-1">
                           <SearchableSelect
                             options={supplierOptions}
                             value={formData.partyId}
-                            onChange={(val) => setFormData({ ...formData, partyId: val })}
+                            onChange={(val) =>
+                              setFormData({ ...formData, partyId: val })
+                            }
                             placeholder="Search supplier..."
                           />
                         </div>
@@ -1690,24 +1694,35 @@ const CreatePurchase = () => {
                           {selectedParty.phone && (
                             <div className="h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2">
                               <Phone size={14} className="text-indigo-600" />
-                              <span className="text-sm font-bold text-slate-700">{selectedParty.phone}</span>
+                              <span className="text-sm font-bold text-slate-700">
+                                {selectedParty.phone}
+                              </span>
                             </div>
                           )}
                           {selectedParty.email && (
                             <div className="h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2">
                               <Mail size={14} className="text-violet-600" />
-                              <span className="text-sm font-bold text-slate-700">{selectedParty.email}</span>
+                              <span className="text-sm font-bold text-slate-700">
+                                {selectedParty.email}
+                              </span>
                             </div>
                           )}
                         </div>
                       )}
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Supplier Bill No</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Bill No
+                      </label>
                       <input
                         type="text"
                         value={formData.supplierBillNo}
-                        onChange={(e) => setFormData({ ...formData, supplierBillNo: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            supplierBillNo: e.target.value,
+                          })
+                        }
                         placeholder="INV-10293"
                         className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
                       />
@@ -1716,20 +1731,34 @@ const CreatePurchase = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Purchase Date</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Purchase Date
+                      </label>
                       <input
                         type="date"
                         value={formData.purchaseDate}
-                        onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            purchaseDate: e.target.value,
+                          })
+                        }
                         className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Supplier Bill Date</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Supplier Bill Date
+                      </label>
                       <input
                         type="date"
                         value={formData.supplierBillDate}
-                        onChange={(e) => setFormData({ ...formData, supplierBillDate: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            supplierBillDate: e.target.value,
+                          })
+                        }
                         className="w-full h-14 rounded-xl border border-slate-200 bg-white px-5 font-black outline-none focus:ring-4 focus:ring-indigo-500/10"
                       />
                     </div>
@@ -1741,8 +1770,12 @@ const CreatePurchase = () => {
               <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-visible">
                 <div className="h-[78px] px-6 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-[24px] font-black text-slate-900">Purchase Items</h2>
-                    <p className="text-sm text-slate-400 font-semibold mt-1">Add inventory products into invoice</p>
+                    <h2 className="text-[24px] font-black text-slate-900">
+                      Purchase Items
+                    </h2>
+                    <p className="text-sm text-slate-400 font-semibold mt-1">
+                      Add inventory products into invoice
+                    </p>
                   </div>
                   <div className="h-11 px-4 rounded-xl bg-indigo-50 flex items-center gap-2">
                     <Package size={16} className="text-indigo-600" />
@@ -1760,19 +1793,30 @@ const CreatePurchase = () => {
                     >
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                         <div className="lg:col-span-6">
-                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Product</label>
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Product
+                          </label>
                           <SearchableSelect
                             options={itemOptions}
                             value={item.itemId}
                             isItem={true}
                             onChange={(val) => {
                               handleItemChange(index, "itemId", val);
-                              const isLastRow = index === formData.items.length - 1;
+                              const isLastRow =
+                                index === formData.items.length - 1;
                               if (isLastRow && val) {
                                 setTimeout(() => {
                                   setFormData((prev) => ({
                                     ...prev,
-                                    items: [...prev.items, { itemId: "", quantity: 1, price: 0, total: 0 }],
+                                    items: [
+                                      ...prev.items,
+                                      {
+                                        itemId: "",
+                                        quantity: 1,
+                                        price: 0,
+                                        total: 0,
+                                      },
+                                    ],
                                   }));
                                 }, 100);
                               }
@@ -1781,29 +1825,45 @@ const CreatePurchase = () => {
                           />
                         </div>
                         <div className="lg:col-span-2">
-                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Qty</label>
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Qty
+                          </label>
                           <input
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
+                            onChange={(e) =>
+                              handleItemChange(
+                                index,
+                                "quantity",
+                                e.target.value
+                              )
+                            }
                             className="w-full h-14 rounded-xl border border-slate-200 bg-white px-4 text-center font-black outline-none"
                           />
                         </div>
                         <div className="lg:col-span-2">
-                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Price</label>
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Price
+                          </label>
                           <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">₹</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">
+                              ₹
+                            </span>
                             <input
                               type="number"
                               value={item.price}
-                              onChange={(e) => handleItemChange(index, "price", e.target.value)}
+                              onChange={(e) =>
+                                handleItemChange(index, "price", e.target.value)
+                              }
                               className="w-full h-14 rounded-xl border border-slate-200 bg-white pl-10 pr-4 font-black outline-none"
                             />
                           </div>
                         </div>
                         <div className="lg:col-span-1">
-                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Total</label>
+                          <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                            Total
+                          </label>
                           <div className="h-14 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xs">
                             ₹{item.total || 0}
                           </div>
@@ -1822,14 +1882,21 @@ const CreatePurchase = () => {
                   ))}
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, items: [...prev.items, { itemId: "", quantity: 1, price: 0, total: 0 }] }))}
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        items: [
+                          ...prev.items,
+                          { itemId: "", quantity: 1, price: 0, total: 0 },
+                        ],
+                      }))
+                    }
                     className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                   >
                     <Plus size={18} /> Add New Row
                   </button>
                 </div>
               </div>
-
             </div>
 
             {/* SUMMARY RAIL */}
@@ -1839,34 +1906,56 @@ const CreatePurchase = () => {
                   <div className="bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 p-6 text-white">
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <p className="uppercase tracking-[0.3em] text-[10px] font-black text-indigo-200 mb-2">Purchase Summary</p>
+                        <p className="uppercase tracking-[0.3em] text-[10px] font-black text-indigo-200 mb-2">
+                          Purchase Summary
+                        </p>
                         <h2 className="text-[28px] font-black">Total Amount</h2>
                       </div>
                       <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center">
                         <IndianRupee size={24} />
                       </div>
                     </div>
-                    <h1 className="text-5xl font-black tracking-tight leading-none">₹{formData.totalAmount || 0}</h1>
+                    <h1 className="text-5xl font-black tracking-tight leading-none">
+                      ₹{formData.totalAmount || 0}
+                    </h1>
                   </div>
 
                   <div className="p-5 space-y-5">
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Payment Mode</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Payment Mode
+                      </label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, paymentMode: "credit", paidAmount: 0 })}
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              paymentMode: "credit",
+                              paidAmount: 0,
+                            })
+                          }
                           className={`h-13 py-3 rounded-xl font-black transition-all ${
-                            formData.paymentMode === "credit" ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-100 text-slate-500"
+                            formData.paymentMode === "credit"
+                              ? "bg-indigo-600 text-white shadow-lg"
+                              : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           Credit
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, paymentMode: "cash", paidAmount: formData.totalAmount })}
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              paymentMode: "cash",
+                              paidAmount: formData.totalAmount,
+                            })
+                          }
                           className={`h-13 py-3 rounded-xl font-black transition-all ${
-                            formData.paymentMode === "cash" ? "bg-emerald-600 text-white shadow-lg" : "bg-slate-100 text-slate-500"
+                            formData.paymentMode === "cash"
+                              ? "bg-emerald-600 text-white shadow-lg"
+                              : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           Cash
@@ -1875,14 +1964,23 @@ const CreatePurchase = () => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">Paid Amount</label>
+                      <label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-400 mb-3 block">
+                        Paid Amount
+                      </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">₹</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">
+                          ₹
+                        </span>
                         <input
                           type="number"
                           disabled={formData.paymentMode === "cash"}
                           value={formData.paidAmount}
-                          onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              paidAmount: e.target.value,
+                            })
+                          }
                           className="w-full h-14 rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-black outline-none"
                         />
                       </div>
@@ -1890,16 +1988,32 @@ const CreatePurchase = () => {
 
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500 font-semibold">Total Items</span>
-                        <span className="font-black">{formData.items.filter(i => i.itemId).length}</span>
+                        <span className="text-slate-500 font-semibold">
+                          Total Items
+                        </span>
+                        <span className="font-black">
+                          {formData.items.filter((i) => i.itemId).length}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500 font-semibold">Balance Due</span>
-                        <span className="font-black text-rose-600">₹{Math.max(0, formData.totalAmount - formData.paidAmount)}</span>
+                        <span className="text-slate-500 font-semibold">
+                          Balance Due
+                        </span>
+                        <span className="font-black text-rose-600">
+                          ₹
+                          {Math.max(
+                            0,
+                            formData.totalAmount - formData.paidAmount
+                          )}
+                        </span>
                       </div>
                       <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
-                        <span className="text-slate-500 font-semibold">Grand Total</span>
-                        <span className="text-2xl font-black text-indigo-700">₹{formData.totalAmount || 0}</span>
+                        <span className="text-slate-500 font-semibold">
+                          Grand Total
+                        </span>
+                        <span className="text-2xl font-black text-indigo-700">
+                          ₹{formData.totalAmount || 0}
+                        </span>
                       </div>
                     </div>
                   </div>
