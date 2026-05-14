@@ -3,7 +3,7 @@ const Stock = require("../models/stock.model");
 // Saari inventory ka status nikalne ke liye
 const getAllStock = async (companyId, branchId) => {
   return await Stock.find({ companyId, branchId })
-    .populate("itemId", "name sku unit costPrice sellingPrice barcode category brand") // Item details bhi le aao
+    .populate("itemId", "name sku unit costPrice sellingPrice barcode category brand maintainStock") // Item details bhi le aao
     .sort({ quantity: 1 }); // Kam stock waale pehle dikhenge
 };
 

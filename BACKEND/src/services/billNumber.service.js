@@ -19,7 +19,6 @@ const Company = require(
 /* ------------------------------------------------ */
 
 const getFinancialYear = () => {
-
   const today = new Date();
 
   const year = today.getFullYear();
@@ -28,17 +27,14 @@ const getFinancialYear = () => {
     today.getMonth() + 1;
 
   if (month >= 4) {
-
     return `${year}-${String(
       year + 1
     ).slice(-2)}`;
-
-  } else {
-
-    return `${year - 1}-${String(
-      year
-    ).slice(-2)}`;
   }
+
+  return `${year - 1}-${String(
+    year
+  ).slice(-2)}`;
 };
 
 /* ------------------------------------------------ */
@@ -46,7 +42,6 @@ const getFinancialYear = () => {
 /* ------------------------------------------------ */
 
 const voucherPrefixes = {
-
   "Sales Invoice": "INV",
 
   "Purchase Invoice": "PUR",
@@ -63,7 +58,6 @@ const voucherPrefixes = {
 /* ------------------------------------------------ */
 
 const generateBillNumber = async ({
-
   activeCompanyId,
 
   activeBranchId,
@@ -86,7 +80,7 @@ const generateBillNumber = async ({
     );
 
   /* -------------------------------------------- */
-  /* FIND EXISTING CONFIG */
+  /* FIND CONFIG */
   /* -------------------------------------------- */
 
   let config =
@@ -104,28 +98,22 @@ const generateBillNumber = async ({
     });
 
   /* -------------------------------------------- */
-  /* CREATE CONFIG IF NOT EXISTS */
+  /* AUTO CREATE */
   /* -------------------------------------------- */
 
   if (!config) {
-
-    
-
-    /* ---------- COMPANY ---------- */
 
     const company =
       await Company.findById(
         companyObjectId
       );
 
-    /* ---------- BRANCH ---------- */
-
     const branch =
       await Branch.findById(
         branchObjectId
       );
 
-    /* ---------- CREATE ---------- */
+    const startingNumber = 1;
 
     config =
       await BillNumberConfig.create({
@@ -138,14 +126,10 @@ const generateBillNumber = async ({
 
         voucherType,
 
-        /* COMPANY CODE */
-
         companyCode:
           company?.code ||
           company?.shortName ||
           "ERP",
-
-        /* BRANCH CODE */
 
         branchCode:
 
@@ -158,8 +142,6 @@ const generateBillNumber = async ({
             ?.toUpperCase()
 
           || "MAIN",
-
-        /* CONFIG */
 
         prefix:
           voucherPrefixes[
@@ -185,9 +167,10 @@ const generateBillNumber = async ({
 
         numberPadding: 4,
 
-        /* IMPORTANT */
+        currentSequence:
+          startingNumber - 1,
 
-        currentSequence: 0,
+        startingNumber,
 
         lastGeneratedBillNo: "",
 
@@ -211,24 +194,38 @@ const generateBillNumber = async ({
 
   ) {
 
-   
-
     config.financialYear =
       currentFY;
 
-    config.currentSequence = 0;
+    config.currentSequence =
+      config.startingNumber - 1;
 
     await config.save();
   }
 
   /* -------------------------------------------- */
-  /* INCREMENT */
+  /* AUTO GENERATE CHECK */
+  /* -------------------------------------------- */
+
+  if (!config.autoGenerate) {
+
+    throw new Error(
+      "Auto bill generation is disabled for this voucher type."
+    );
+  }
+
+  /* -------------------------------------------- */
+  /* SAFE INCREMENT */
   /* -------------------------------------------- */
 
   const updatedConfig =
-    await BillNumberConfig.findByIdAndUpdate(
+    await BillNumberConfig.findOneAndUpdate(
 
-      config._id,
+      {
+        _id: config._id,
+
+        isActive: true,
+      },
 
       {
         $inc: {
@@ -302,6 +299,20 @@ const generateBillNumber = async ({
     );
   }
 
+  /* MONTH */
+
+  if (
+    updatedConfig.includeMonth
+  ) {
+
+    const currentMonth =
+      String(
+        new Date().getMonth() + 1
+      ).padStart(2, "0");
+
+    parts.push(currentMonth);
+  }
+
   /* NUMBER */
 
   parts.push(
@@ -319,17 +330,15 @@ const generateBillNumber = async ({
     );
   }
 
-  /* FINAL NUMBER */
+  /* FINAL */
 
   const finalBillNumber =
     parts.join(
       updatedConfig.separator
     );
 
- 
-
   /* -------------------------------------------- */
-  /* SAVE LAST GENERATED */
+  /* SAVE LAST */
   /* -------------------------------------------- */
 
   await BillNumberConfig.updateOne(
@@ -352,7 +361,7 @@ const generateBillNumber = async ({
 };
 
 /* ------------------------------------------------ */
-/* CREATE OR UPDATE CONFIG */
+/* CREATE / UPDATE CONFIG */
 /* ------------------------------------------------ */
 
 const createOrUpdateConfig = async ({
@@ -375,13 +384,21 @@ const createOrUpdateConfig = async ({
 
   includeBranch,
 
+  includeMonth,
+
   resetEveryFY,
+
+  autoGenerate,
 
   financialYear,
 
   branchCode,
 
   companyCode,
+
+  startingNumber,
+
+  isActive,
 }) => {
 
   /* ---------------------------------------- */
@@ -428,8 +445,14 @@ const createOrUpdateConfig = async ({
     existingConfig.includeBranch =
       includeBranch;
 
+    existingConfig.includeMonth =
+      includeMonth;
+
     existingConfig.resetEveryFY =
       resetEveryFY;
+
+    existingConfig.autoGenerate =
+      autoGenerate;
 
     existingConfig.financialYear =
       financialYear;
@@ -440,10 +463,11 @@ const createOrUpdateConfig = async ({
     existingConfig.companyCode =
       companyCode;
 
-    /* IMPORTANT */
+    existingConfig.startingNumber =
+      startingNumber;
 
-    // DO NOT CHANGE:
-    // currentSequence
+    existingConfig.isActive =
+      isActive;
 
     await existingConfig.save();
 
@@ -477,7 +501,11 @@ const createOrUpdateConfig = async ({
 
       includeBranch,
 
+      includeMonth,
+
       resetEveryFY,
+
+      autoGenerate,
 
       financialYear,
 
@@ -485,11 +513,14 @@ const createOrUpdateConfig = async ({
 
       companyCode,
 
-      currentSequence: 0,
+      startingNumber,
+
+      currentSequence:
+        startingNumber - 1,
 
       lastGeneratedBillNo: "",
 
-      isActive: true,
+      isActive,
     });
 
   return newConfig;
@@ -542,7 +573,11 @@ const getBillNumberConfig = async ({
 
       includeBranch: 1,
 
+      includeMonth: 1,
+
       resetEveryFY: 1,
+
+      autoGenerate: 1,
 
       financialYear: 1,
 
@@ -550,9 +585,13 @@ const getBillNumberConfig = async ({
 
       companyCode: 1,
 
+      startingNumber: 1,
+
       currentSequence: 1,
 
       lastGeneratedBillNo: 1,
+
+      isActive: 1,
     });
 
   return config;
